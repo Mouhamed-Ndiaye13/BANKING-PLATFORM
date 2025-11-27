@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Simulation Paiement Complet</title>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; background: #f0f2f5; }
+.container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+input, select, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: 1px solid #ccc; }
+button { background: #007bff; color: white; border: none; cursor: pointer; }
+button:hover { background: #0056b3; }
+.message { margin-top: 10px; font-weight: bold; }
+h2 { margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Créer un Utilisateur</h2>
+  <input type="text" id="newName" placeholder="Nom complet" />
+  <input type="email" id="newEmail" placeholder="Email" />
+  <button onclick="createUser()">Créer Utilisateur</button>
+
+  <h2>Créer un Compte</h2>
+  <select id="userSelect"></select>
+  <select id="accountType">
+    <option value="courant">Compte Courant</option>
+    <option value="épargne">Compte Épargne</option>
+  </select>
+  <input type="number" id="initialBalance" placeholder="Solde initial" />
+  <button onclick="createAccount()">Créer Compte</button>
+
+  <h2>Simuler un Paiement</h2>
+  <select id="paymentUserSelect"></select>
+  <select id="accountSelect"></select>
+  <input type="number" id="paymentAmount" placeholder="Montant" />
+  <button onclick="makePayment()">Payer</button>
+
+  <div class="message" id="message"></div>
+</div>
+
+<script>
+const API_BASE = "http://localhost:5000/api";
+
+// --- Gestion Utilisateurs ---
+async function fetchUsers() {
+  try {
+    const res = await axios.get(`${API_BASE}/users`);
+    const select = document.getElementById('userSelect');
+    const paymentSelect = document.getElementById('paymentUserSelect');
+    select.innerHTML = '';
+    paymentSelect.innerHTML = '';
+    res.data.forEach(u => {
+      const option1 = document.createElement("option");
+      option1.value = u._id;
+      option1.textContent = `${u.name} (${u.email})`;
+      select.appendChild(option1);
+
+      const option2 = document.createElement("option");
+      option2.value = u._id;
+      option2.textContent = `${u.name} (${u.email})`;
+      paymentSelect.appendChild(option2);
+    });
+  } catch (err) {
+    console.error(err);
+    document.getElementById('message').textContent = "❌ Impossible de récupérer les utilisateurs";
+  }
+}
+
+async function createUser() {
+  const name = document.getElementById('newName').value;
+  const email = document.getElementById('newEmail').value;
+  if (!name || !email) return alert("Remplir tous les champs");
+  try {
+    await axios.post(`${API_BASE}/users`, { name, email });
+    document.getElementById('message').textContent = `✅ Utilisateur ${name} créé`;
+    fetchUsers();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('message').textContent = "❌ Erreur création utilisateur";
+  }
+}
+
+// --- Gestion Comptes ---
+async function createAccount() {
+  const userId = document.getElementById('userSelect').value;
+  const type = document.getElementById('accountType').value;
+  const balance = Number(document.getElementById('initialBalance').value);
+  if (!userId || !type || isNaN(balance)) return alert("Remplir tous les champs");
+  try {
+    await axios.post(`${API_BASE}/accounts`, { user: userId, type, balance });
+    document.getElementById('message').textContent = "✅ Compte créé avec succès";
+  } catch (err) {
+    console.error(err);
+    document.getElementById('message').textContent = "❌ Erreur création compte";
+  }
+}
+
+// --- Gestion Paiement ---
+async function fetchAccounts(userId) {
+  try {
+    const res = await axios.get(`${API_BASE}/accounts?user=${userId}`);
+    const select = document.getElementById('accountSelect');
+    select.innerHTML = "";
+    res.data.forEach(acc => {
+      const option = document.createElement("option");
+      option.value = acc._id;
+      option.textContent = `${acc.type} - Solde: ${acc.balance} €`;
+      select.appendChild(option);
+    });
+  } catch (err) {
+    console.error(err);
+    document.getElementById('message').textContent = "❌ Impossible de récupérer les comptes";
+  }
+}
+
+document.getElementById('paymentUserSelect').addEventListener('change', (e) => {
+  const userId = e.target.value;
+  if (userId) fetchAccounts(userId);
+});
+
+async function makePayment() {
+  const userId = document.getElementById('paymentUserSelect').value;
+  const accountId = document.getElementById('accountSelect').value;
+  const amount = Number(document.getElementById('paymentAmount').value);
+  if (!userId || !accountId || !amount) return alert("Remplir tous les champs");
+  try {
+    const res = await axios.post(`${API_BASE}/payments/pay`, {
+      userId,
+      accountId,
+      amount,
+      description: "Paiement test complet"
+    });
+    document.getElementById('message').textContent = `✅ Paiement réussi ! Nouveau solde : ${res.data.newBalance} €`;
+    fetchAccounts(userId);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('message').textContent = err.response?.data?.message || "❌ Erreur lors du paiement";
+  }
+}
+
+// --- Init ---
+fetchUsers();
+</script>
+
+</body>
+</html>
