@@ -1,29 +1,56 @@
-const Account = require('../models/Account');
+const Account = require("../models/Account");
 
-exports.list = async (req, res) => {
-  const accounts = await Account.find().populate('user', 'name email');
-  res.json(accounts);
+// CREATE
+exports.createAccount = async (req, res) => {
+    try {
+        const account = await Account.create(req.body);
+        res.status(201).json(account);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };
 
-exports.get = async (req, res) => {
-  const account = await Account.findById(req.params.id).populate('user', 'name email');
-  if (!account) return res.status(404).json({ message: 'Compte non trouvé' });
-  res.json(account);
+// GET ALL
+exports.getAllAccounts = async (req, res) => {
+    try {
+        const accounts = await Account.find();
+        res.json(accounts);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };
 
-exports.create = async (req, res) => {
-  const { user, type, balance } = req.body;
-  const account = new Account({ user, type, balance });
-  await account.save();
-  res.status(201).json(account);
+// GET ONE
+exports.getAccountById = async (req, res) => {
+    try {
+        const account = await Account.findById(req.params.id);
+        if (!account) return res.status(404).json({ error: "Account not found" });
+        res.json(account);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };
 
-exports.update = async (req, res) => {
-  const account = await Account.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(account);
+// UPDATE
+exports.updateAccount = async (req, res) => {
+    try {
+        const account = await Account.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        );
+        res.json(account);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };
 
-exports.remove = async (req, res) => {
-  await Account.findByIdAndDelete(req.params.id);
-  res.json({ message: 'Compte supprimé' });
+// DELETE
+exports.deleteAccount = async (req, res) => {
+    try {
+        await Account.findByIdAndDelete(req.params.id);
+        res.json({ message: "Account deleted" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };
