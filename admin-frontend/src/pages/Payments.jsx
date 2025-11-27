@@ -1,70 +1,88 @@
-import React, { useEffect, useState } from 'react';
-import api from '../services/api';
+import React, { useState, useEffect } from "react";
+import { getAccounts, makePayment } from "../services/api";
 
-export default function Payments() {
-  const [payments, setPayments] = useState([]);
-  const [newPayment, setNewPayment] = useState({ title: '', amount: 0, status: 'pending' });
+export default function Payements({ userId }) {
+  const [accounts, setAccounts] = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState("");
+  const [amount, setAmount] = useState("");
+  const [message, setMessage] = useState("");
 
+  // Charger les comptes de l'utilisateur
   useEffect(() => {
-    fetchPayments();
-  }, []);
+    const fetchAccounts = async () => {
+      try {
+        const res = await getAccounts(userId); // adapter selon ton API
+        setAccounts(res.data);
+        if (res.data.length > 0) setSelectedAccount(res.data[0]._id);
+      } catch (err) {
+        console.error(err);
+        setMessage("❌ Impossible de récupérer les comptes");
+      }
+    };
+    fetchAccounts();
+  }, [userId]);
 
-  const fetchPayments = async () => {
-    try {
-      const res = await api.get('/payments');
-      setPayments(res.data);
-    } catch (err) {
-      console.error(err);
+  const handlePay = async () => {
+    if (!selectedAccount || !amount) {
+      setMessage("❌ Veuillez choisir un compte et un montant");
+      return;
     }
-  };
 
-  const addPayment = async () => {
     try {
-      await api.post('/payments', newPayment);
-      setNewPayment({ title: '', amount: 0, status: 'pending' });
-      fetchPayments();
+      const res = await makePayment({
+        userId,
+        accountId: selectedAccount,
+        amount: Number(amount),
+        description: "Paiement mini front",
+      });
+      setMessage(`✅ Paiement réussi ! Nouveau solde : ${res.data.newBalance} €`);
+      setAmount("");
     } catch (err) {
       console.error(err);
-    }
-  };
-
-  const deletePayment = async (id) => {
-    try {
-      await api.delete(`/payments/${id}`);
-      fetchPayments();
-    } catch (err) {
-      console.error(err);
+      setMessage(
+        err.response?.data?.message || "❌ Erreur lors du paiement"
+      );
     }
   };
 
   return (
-    <div className="ml-64 mt-20 p-6">
-      <h2 className="text-xl font-bold mb-4">Paiements</h2>
+    <div className="ml-64 mt-20 p-6 max-w-md">
+      <h1 className="text-2xl font-bold mb-6">Effectuer un paiement</h1>
 
-      <div className="mb-6 flex space-x-2">
-        <input type="text" placeholder="Titre" className="border p-2 rounded"
-          value={newPayment.title} onChange={e => setNewPayment({ ...newPayment, title: e.target.value })} />
-        <input type="number" placeholder="Montant" className="border p-2 rounded"
-          value={newPayment.amount} onChange={e => setNewPayment({ ...newPayment, amount: parseFloat(e.target.value) })} />
-        <select className="border p-2 rounded"
-          value={newPayment.status} onChange={e => setNewPayment({ ...newPayment, status: e.target.value })}>
-          <option value="pending">En attente</option>
-          <option value="success">Succès</option>
-          <option value="failed">Échec</option>
-        </select>
-        <button onClick={addPayment} className="bg-green-600 text-white px-4 rounded hover:bg-green-700">Ajouter</button>
-      </div>
-
-      <div className="bg-white rounded shadow p-4">
-        <ul>
-          {payments.map(p => (
-            <li key={p._id} className="border-b py-2 flex justify-between items-center">
-              <span>{p.title} – {p.amount} € – <span className={`font-bold ${p.status==='success'?'text-green-600':p.status==='failed'?'text-red-600':'text-yellow-500'}`}>{p.status}</span></span>
-              <button onClick={() => deletePayment(p._id)} className="text-red-500 hover:underline">Supprimer</button>
-            </li>
+      <div className="mb-4">
+        <label className="block mb-2 font-semibold">Compte :</label>
+        <select
+          value={selectedAccount}
+          onChange={(e) => setSelectedAccount(e.target.value)}
+          className="w-full p-2 border rounded"
+        >
+          {accounts.map((acc) => (
+            <option key={acc._id} value={acc._id}>
+              {acc.type} - Solde : {acc.balance} €
+            </option>
           ))}
-        </ul>
+        </select>
       </div>
+
+      <div className="mb-4">
+        <label className="block mb-2 font-semibold">Montant :</label>
+        <input
+          type="number"
+          placeholder="Montant"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-full p-2 border rounded"
+        />
+      </div>
+
+      <button
+        onClick={handlePay}
+        className="bg-blue-600 text-white w-full p-2 rounded hover:bg-blue-700"
+      >
+        Payer
+      </button>
+
+      {message && <p className="mt-4 text-sm">{message}</p>}
     </div>
   );
 }
