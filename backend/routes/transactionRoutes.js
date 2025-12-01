@@ -1,11 +1,20 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const auth = require('../middleware/auth');
-const isAdmin = require('../middleware/isAdmin');
-const ctrl = require('../controllers/transactionController');
+const transactionController = require("../controllers/transactionController");
 
-router.get('/', auth, ctrl.list);
-router.get('/:id', auth, ctrl.get);
-router.post('/', auth, ctrl.create);
+// Dashboard stats
+router.get("/stats", transactionController.getStats);
+
+// Transactions: liste + filtres
+router.get("/", transactionController.getTransactions);
+
+// Détails d'une transaction
+router.get("/:id", transactionController.getTransactionById);
+
+// Transfert interne
+router.post("/interne-transfer", transactionController.internalTransfer);
+
+// Transfert externe
+router.post("/externe-transfer", transactionController.externalTransfer);
 
 module.exports = router;

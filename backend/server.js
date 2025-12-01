@@ -4,6 +4,10 @@ const cors = require("cors");
 require("dotenv").config();
 
 const accountRoutes = require("./routes/accountRoutes");
+const transactionRoutes = require('./routes/transactionRoutes');
+
+
+
 
 const app = express();
 app.use(cors());
@@ -14,6 +18,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.log(err));
 
 app.use("/api/accounts", accountRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 app.listen(5000, () => {
   console.log("Serveur lancé sur le port 5000");
