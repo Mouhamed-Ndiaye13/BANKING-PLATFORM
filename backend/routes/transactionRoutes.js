@@ -2,19 +2,19 @@ const express = require("express");
 const router = express.Router();
 const transactionController = require("../controllers/transactionController");
 
-// Dashboard stats
-router.get("/stats", transactionController.getStats);
-
-// Transactions: liste + filtres
+//   Liste des transactions + filtres
 router.get("/", transactionController.getTransactions);
 
-// Détails d'une transaction
+//   Statistiques revenus / dépenses (Dashboard)
+router.get("/stats/global", transactionController.getStats);
+
+//   Détails d’une transaction
 router.get("/:id", transactionController.getTransactionById);
 
 // Transfert interne
-router.post("/interne-transfer", transactionController.internalTransfer);
+router.post("/transfer/internal", transactionController.internalTransfer);
 
-// Transfert externe
-router.post("/externe-transfer", transactionController.externalTransfer);
+//   Transfert externe
+router.post("/transfer/external", transactionController.externalTransfer);
 
 module.exports = router;
