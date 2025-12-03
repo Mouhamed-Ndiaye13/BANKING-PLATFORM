@@ -1,20 +1,50 @@
+// sans authenfication
+
+// const express = require("express");
+// const router = express.Router();
+// const transactionController = require("../controllers/transactionController");
+
+// //   Liste des transactions + filtres
+// router.get("/", transactionController.getTransactions);
+
+// //   Statistiques revenus / dépenses (Dashboard)
+// router.get("/stats/global", transactionController.getStats);
+
+// //   Détails d’une transaction
+// router.get("/:id", transactionController.getTransactionById);
+
+// // Transfert interne
+// router.post("/transfer/internal", transactionController.internalTransfer);
+
+// //   Transfert externe
+// router.post("/transfer/external", transactionController.externalTransfer);
+
+// module.exports = router;
+
+
+// avec authenfication
+ 
 const express = require("express");
 const router = express.Router();
 const transactionController = require("../controllers/transactionController");
+const auth = require("../middleware/authMiddleware"); 
 
-//   Liste des transactions + filtres
+// Toutes les routes doivent être protégées
+router.use(auth);
+
+// Liste des transactions + filtres
 router.get("/", transactionController.getTransactions);
 
-//   Statistiques revenus / dépenses (Dashboard)
+// Statistiques revenus / dépenses (Dashboard)
 router.get("/stats/global", transactionController.getStats);
-
-//   Détails d’une transaction
-router.get("/:id", transactionController.getTransactionById);
 
 // Transfert interne
 router.post("/transfer/internal", transactionController.internalTransfer);
 
-//   Transfert externe
+// Transfert externe
 router.post("/transfer/external", transactionController.externalTransfer);
+
+// Détails d’une transaction (toujours en dernier)
+router.get("/:id", transactionController.getTransactionById);
 
 module.exports = router;
