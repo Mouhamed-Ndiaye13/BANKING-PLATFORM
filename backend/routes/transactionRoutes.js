@@ -22,29 +22,18 @@
 // module.exports = router;
 
 
-// avec authenfication
- 
-const express = require("express");
-const router = express.Router();
-const transactionController = require("../controllers/transactionController");
-const auth = require("../middleware/authMiddleware"); 
+// avec authen
+const router = require("express").Router();
+const auth = require("../middleware/auth");
+const transactionCtrl = require("../controllers/transactionController");
 
-// Toutes les routes doivent être protégées
-router.use(auth);
+// GET all transactions
+router.get("/", auth, transactionCtrl.getTransactions);
 
-// Liste des transactions + filtres
-router.get("/", transactionController.getTransactions);
-
-// Statistiques revenus / dépenses (Dashboard)
-router.get("/stats/global", transactionController.getStats);
-
-// Transfert interne
-router.post("/transfer/internal", transactionController.internalTransfer);
-
-// Transfert externe
-router.post("/transfer/external", transactionController.externalTransfer);
-
-// Détails d’une transaction (toujours en dernier)
-router.get("/:id", transactionController.getTransactionById);
+// GET one transaction
+router.get("/:id", auth, transactionCtrl.getTransactionById);
 
 module.exports = router;
+
+
+

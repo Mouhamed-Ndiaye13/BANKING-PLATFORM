@@ -17,14 +17,13 @@
  //avec authentification
 const express = require("express");
 const router = express.Router();
-const accountController = require("../controllers/accountController");
-const { auth } = require("../middleware/auth");
+const auth = require("../middleware/auth");
+const accountCtrl = require("../controllers/accountController"); 
 
-router.post("/create", auth, accountController.createAccount);
-router.get("/", auth, accountController.getAllAccounts);
-router.get("/:id", auth, accountController.getAccountById);
-router.put("/:id", auth, accountController.updateAccount);
-router.delete("/:id", auth, accountController.deleteAccount);
+router.get("/", auth, accountCtrl.getAccounts);
+router.get("/:id", auth, accountCtrl.getAccountById);
+router.post("/", auth, accountCtrl.createAccount); 
+router.put("/:id", auth, accountCtrl.updateAccount);
 
 module.exports = router;
 
