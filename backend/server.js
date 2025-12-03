@@ -1,27 +1,37 @@
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 
+// Import des routes
 const accountRoutes = require("./routes/accountRoutes");
-const transactionRoutes = require('./routes/transactionRoutes');
-const authRoutes = require("./routes/authRoutes");
-
-
+const transactionRoutes = require("./routes/transactionRoutes");
+const transferRoutes = require("./routes/transferRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 const app = express();
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connecté"))
-  .catch(err => console.log(err));
-
+// Routes
 app.use("/api/accounts", accountRoutes);
-app.use('/api/transactions', transactionRoutes);
-app.use("/api/auth", authRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/transfers", transferRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
-app.listen(5000, () => {
-  console.log("Serveur lancé sur le port 5000");
+// Connexion à MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+.then(() => console.log("MongoDB connecté avec succès "))
+.catch((err) => console.error("Erreur MongoDB :", err));
+
+// Port
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Serveur lancé sur le port ${PORT}`);
 });

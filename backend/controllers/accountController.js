@@ -107,28 +107,22 @@
 
 //avec authentification
 
+// controllers/accountController.js
 const mongoose = require("mongoose");
 const Account = require("../models/Account");
 const User = require("../models/User");
 const nodemailer = require("nodemailer");
 
-// ---------- Creer compte ----------
+// ---------- Créer un compte ----------
 exports.createAccount = async (req, res) => {
   try {
     const { type } = req.body;
-
-    // Vérifier si l’utilisateur est authentifié (middleware JWT)
     const userId = req.user.id;
-
-    if (!userId) {
-      return res.status(401).json({ message: "Accès refusé : vous devez être connecté." });
-    }
 
     if (!type) {
       return res.status(400).json({ message: "Veuillez fournir le type de compte." });
     }
 
-    // Vérifier que l'utilisateur existe
     const existingUser = await User.findById(userId);
     if (!existingUser) {
       return res.status(404).json({ message: "Utilisateur introuvable." });
@@ -142,36 +136,32 @@ exports.createAccount = async (req, res) => {
       });
     }
 
-    // Création du compte
-    const newAccount = new Account({
-      user: userId,
-      type,
-      // Numero compte auto-généré dans Account Model (pre save)
-    });
-
+    const newAccount = new Account({ user: userId, type });
     await newAccount.save();
 
-    // ---------- ENVOI EMAIL ----------
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
+    // Envoi email (mock ou réel)
+    if (process.env.NODE_ENV !== "test") {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: existingUser.email,
-      subject: "Votre nouveau compte bancaire a été créé",
-      html: `
-        <h3>Bonjour ${existingUser.name},</h3>
-        <p>Votre compte <b>${type}</b> a été créé avec succès !</p>
-        <p><b>Numéro de compte :</b> ${newAccount.accountNumber}</p>
-        <br/>
-        <p>Merci d'utiliser  banqueRewmi.</p>
-      `
-    });
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: existingUser.email,
+        subject: "Votre nouveau compte bancaire a été créé",
+        html: `
+          <h3>Bonjour ${existingUser.name},</h3>
+          <p>Votre compte <b>${type}</b> a été créé avec succès !</p>
+          <p><b>Numéro de compte :</b> ${newAccount.accountNumber}</p>
+          <br/>
+          <p>Merci d'utiliser banqueRewmi.</p>
+        `
+      });
+    }
 
     res.status(201).json({
       message: "Compte créé avec succès.",
@@ -184,23 +174,29 @@ exports.createAccount = async (req, res) => {
   }
 };
 
-// ---------- GET tous les comptes ----------
-exports.getAllAccounts = async (req, res) => {
+// ---------- GET comptes du user ----------
+exports.getAccounts = async (req, res) => {
   try {
-    const accounts = await Account.find().populate("user");
+    const userId = req.user.id;
+    const accounts = await Account.find({ user: userId });
     res.json(accounts);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// ---------- GET Compte par ID ----------
+// ---------- GET compte par ID ----------
 exports.getAccountById = async (req, res) => {
   try {
-    const account = await Account.findById(req.params.id).populate("user");
+    const account = await Account.findById(req.params.id);
 
     if (!account) {
       return res.status(404).json({ message: "Compte introuvable." });
+    }
+
+    // Vérifier que l'utilisateur est propriétaire
+    if (account.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Accès refusé." });
     }
 
     res.json(account);
@@ -210,41 +206,47 @@ exports.getAccountById = async (req, res) => {
   }
 };
 
-// ---------- UPDATE Compte ----------
+// ---------- UPDATE compte ----------
 exports.updateAccount = async (req, res) => {
   try {
-    const updated = await Account.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
+    const account = await Account.findById(req.params.id);
 
-    if (!updated) {
+    if (!account) {
       return res.status(404).json({ message: "Compte introuvable." });
     }
 
-    res.json({
-      message: "Compte mis à jour.",
-      account: updated
-    });
+    if (account.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Accès refusé." });
+    }
+
+    Object.assign(account, req.body);
+    await account.save();
+
+    res.json({ message: "Compte mis à jour.", account });
 
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// ---------- DELETE Compte ----------
+// ---------- DELETE compte ----------
 exports.deleteAccount = async (req, res) => {
   try {
-    const deleted = await Account.findByIdAndDelete(req.params.id);
+    const account = await Account.findById(req.params.id);
 
-    if (!deleted) {
+    if (!account) {
       return res.status(404).json({ message: "Compte introuvable." });
     }
 
+    if (account.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Accès refusé." });
+    }
+
+    await account.remove();
     res.json({ message: "Compte supprimé avec succès." });
 
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
