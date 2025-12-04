@@ -1,24 +1,21 @@
+// api.js
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: 'http://localhost:5000/api',
 });
 
 export const setToken = (token) => {
   api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 };
 
-// Users
+// USERS
 export const getUsers = () => api.get("/users");
 export const getUser = (id) => api.get(`/users/${id}`);
+export const updateUser = (id, data) => api.put(`/users/${id}`, data);
+export const deleteUser = (id) => api.delete(`/users/${id}`);
 
-// Accounts
-export const getAccounts = () => api.get("/accounts");
-
-// Transactions
-export const getTransactions = () => api.get("/transactions");
-
-// Payments
-export const getPayments = () => api.get("/payments");
+// ACCOUNTS
+export const getAccounts = () => api.get("/accounts");  // <- ajoute ceci
 
 export default api;
