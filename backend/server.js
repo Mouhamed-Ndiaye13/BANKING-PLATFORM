@@ -5,20 +5,37 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-
 import User from "./models/User.js";
 
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv").config();
+
+// Import des routes
+const accountRoutes = require("./routes/accountRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
+const transferRoutes = require("./routes/transferRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 const app = express();
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// -----------------------------------------
-// MONGODB CONNECTION
-// -----------------------------------------
-mongoose
-  .connect("mongodb+srv://mouhamedNdiaye:Fessel_2025@banking-platform.srkvxx7.mongodb.net/")
-  .then(() => console.log("MongoDB Atlas connecté ✔"))
-  .catch((err) => console.log("Erreur MongoDB ❌", err));
+// Routes
+app.use("/api/accounts", accountRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/transfers", transferRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+
+// Connexion à MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+.then(() => console.log("MongoDB connecté avec succès "))
+.catch((err) => console.error("Erreur MongoDB :", err));
 
 
 // -----------------------------------------
