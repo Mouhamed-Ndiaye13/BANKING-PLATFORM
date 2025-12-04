@@ -1,0 +1,93 @@
+// controllers/transferController.js
+const Account = require("../models/Account");
+const Transaction = require("../models/Transaction");
+
+exports.internalTransfer = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { sourceAccount, destinationAccount, amount } = req.body;
+
+        if (sourceAccount === destinationAccount) {
+            return res.status(400).json({ message: "Les deux comptes doivent être différents" });
+        }
+
+        const amt = Number(amount);
+
+        const source = await Account.findById(sourceAccount);
+        const dest = await Account.findById(destinationAccount);
+
+        if (!source || !dest) {
+            return res.status(404).json({ message: "Compte introuvable" });
+        }
+
+        if (source.user.toString() !== userId) {
+            return res.status(403).json({ message: "Vous n'êtes pas propriétaire du compte source" });
+        }
+
+        if (source.balance < amt) {
+            return res.status(400).json({ message: "Solde insuffisant" });
+        }
+
+        // Mise à jour des soldes
+        source.balance -= amt;
+        dest.balance += amt;
+
+        await source.save();
+        await dest.save();
+
+        // Créer la transaction
+        const transaction = await Transaction.create({
+            user: userId,
+            type: "internal_transfer",
+            amount: amt,
+            sourceAccount,
+            destinationAccount,
+            description: "Transfert interne"
+        });
+
+        res.json({ message: "Transfert interne réussi", transaction });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+
+exports.externalTransfer = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { sourceAccount, beneficiaryIban, amount } = req.body;
+
+        const amt = Number(amount);
+
+        const source = await Account.findById(sourceAccount);
+
+        if (!source) {
+            return res.status(404).json({ message: "Compte introuvable" });
+        }
+
+        if (source.user.toString() !== userId) {
+            return res.status(403).json({ message: "Non autorisé" });
+        }
+
+        if (source.balance < amt) {
+            return res.status(400).json({ message: "Solde insuffisant" });
+        }
+
+        source.balance -= amt;
+        await source.save();
+
+        const transaction = await Transaction.create({
+            user: userId,
+            type: "external_transfer",
+            amount: amt,
+            sourceAccount,
+            description: `Virement externe vers ${beneficiaryIban}`
+        });
+
+        res.json({ message: "Virement externe effectué", transaction });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
