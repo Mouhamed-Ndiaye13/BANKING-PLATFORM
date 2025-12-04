@@ -1,33 +1,34 @@
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
+import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+
 import User from "./models/User.js";
 
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-require("dotenv").config();
+// Import des routes de ton collègue
+import accountRoutes from "./routes/accountRoutes.js";
+import transactionRoutes from "./routes/transactionRoutes.js";
+import transferRoutes from "./routes/transferRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
-// Import des routes
-const accountRoutes = require("./routes/accountRoutes");
-const transactionRoutes = require("./routes/transactionRoutes");
-const transferRoutes = require("./routes/transferRoutes");
-const dashboardRoutes = require("./routes/dashboardRoutes");
+dotenv.config();
+
 const app = express();
-
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// -----------------------------------------
+// Routes principales du projet
+// -----------------------------------------
 app.use("/api/accounts", accountRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/transfers", transferRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+
 
 // Connexion à MongoDB
 mongoose.connect(process.env.MONGO_URI, {
