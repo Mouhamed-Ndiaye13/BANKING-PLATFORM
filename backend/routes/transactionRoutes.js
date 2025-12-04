@@ -27,10 +27,10 @@ const router = require("express").Router();
 const auth = require("../middleware/auth");
 const transactionCtrl = require("../controllers/transactionController");
 
-// GET all transactions
+// GET tous les transactions
 router.get("/", auth, transactionCtrl.getTransactions);
 
-// GET one transaction
+// GET lire un transaction
 router.get("/:id", auth, transactionCtrl.getTransactionById);
 
 module.exports = router;
