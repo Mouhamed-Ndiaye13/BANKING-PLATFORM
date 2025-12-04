@@ -148,13 +148,18 @@ app.post("/reset-password", async (req, res) => {
   try {
     const { token, password } = req.body;
 
+    if (!token || !password) {
+      return res.status(400).json({ message: "Token et nouveau mot de passe requis" });
+    }
+
     const user = await User.findOne({
       resetToken: token,
       resetTokenExpire: { $gt: Date.now() }
     });
 
-    if (!user)
+    if (!user) {
       return res.status(400).json({ message: "Lien invalide ou expiré" });
+    }
 
     user.password = await bcrypt.hash(password, 10);
     user.resetToken = null;
@@ -162,7 +167,7 @@ app.post("/reset-password", async (req, res) => {
 
     await user.save();
 
-    res.json({ message: "Mot de passe modifié !" });
+    res.json({ message: "Mot de passe réinitialisé avec succès !" });
 
   } catch (err) {
     console.log("🔥 ERREUR RESET PASSWORD :", err);
