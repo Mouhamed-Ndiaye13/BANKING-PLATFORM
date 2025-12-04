@@ -1,65 +1,76 @@
 const User = require("../models/User");
+const bcrypt = require("bcryptjs");
 
-// GET /users/me
-const me = async (req, res) => {
+// Créer un utilisateur (POST /api/users)
+const createUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
-    res.json(user);
+    const { firstname, lastname, email, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      firstname,
+      lastname,
+      email,
+      password: hashedPassword
+    });
+
+    res.status(201).json(user);
   } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(400).json({ message: err.message });
   }
 };
 
-// GET /users
-const list = async (req, res) => {
+// Modifier profil (PUT /api/users/update-profile)
+const updateProfile = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
-    res.json(users);
+    const userId = req.user.id;
+    const updatedUser = await User.findByIdAndUpdate(userId, req.body, { new: true }).select("-password");
+    res.json(updatedUser);
   } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(400).json({ message: err.message });
   }
 };
 
-// GET /users/:id
-const get = async (req, res) => {
+// Modifier mot de passe (PUT /api/users/update-password)
+const updatePassword = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
+    const { oldPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id);
+
     if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
-    res.json(user);
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Ancien mot de passe incorrect" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ message: "Mot de passe mis à jour avec succès" });
   } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({ message: err.message });
   }
 };
 
-// PUT /users/:id
-const update = async (req, res) => {
+// Ajouter / modifier photo (POST /api/users/upload-photo)
+const updateAvatar = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    ).select("-password");
-    res.json(user);
+    const userId = req.user.id;
+
+    if (!req.file) return res.status(400).json({ message: "Aucune image téléchargée" });
+
+    const imagePath = `/uploads/${req.file.filename}`;
+    const updatedUser = await User.findByIdAndUpdate(userId, { avatar: imagePath }, { new: true }).select("-password");
+
+    res.json(updatedUser);
   } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({ message: err.message });
   }
 };
 
-// DELETE /users/:id
-const remove = async (req, res) => {
-  try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
-    res.json({ message: "Utilisateur supprimé" });
-  } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-};
-
+// Exporter toutes les fonctions pour userRoutes
 module.exports = {
-  me,
-  list,
-  get,
-  update,
-  remove
+  createUser,
+  updateProfile,
+  updatePassword,
+  updateAvatar
 };
