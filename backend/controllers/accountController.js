@@ -107,7 +107,6 @@
 
 //avec authentification
 
-// controllers/accountController.js
 const mongoose = require("mongoose");
 const Account = require("../models/Account");
 const User = require("../models/User");
@@ -139,7 +138,7 @@ exports.createAccount = async (req, res) => {
     const newAccount = new Account({ user: userId, type });
     await newAccount.save();
 
-    // Envoi email (mock ou réel)
+    // Envoi email ( réel)
     if (process.env.NODE_ENV !== "test") {
       const transporter = nodemailer.createTransport({
         service: "gmail",
