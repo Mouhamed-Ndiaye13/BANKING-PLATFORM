@@ -1,14 +1,19 @@
 const express = require("express");
 const router = express.Router();
+const userController = require("../controllers/userController");
 const auth = require("../middleware/auth");
-const isAdmin = require("../middleware/isAdmin");
-const ctrl = require("../controllers/userController");
+const upload = require("../middleware/uploadMiddleware");
 
-router.get("/me", auth, ctrl.me);
-router.get("/", auth, isAdmin, ctrl.list);
-router.get("/:id", auth, isAdmin, ctrl.get);
-router.put("/:id", auth, isAdmin, ctrl.update);
-router.delete("/:id", auth, isAdmin, ctrl.remove);
+//  Créer un utilisateur (POST /api/users)
+router.post("/", userController.createUser);
 
+// Modifier profil (PUT /api/users/update-profile)
+router.put("/update-profile", auth, userController.updateProfile);
+
+// Modifier mot de passe (PUT /api/users/update-password)
+router.put("/update-password", auth, userController.updatePassword);
+
+// Ajouter image (POST /api/users/upload-photo)
+router.post("/upload-photo", auth, upload.single("photo"), userController.updateAvatar);
 
 module.exports = router;
