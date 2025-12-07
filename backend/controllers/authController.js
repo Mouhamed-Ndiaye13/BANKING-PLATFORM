@@ -41,32 +41,154 @@
 //     res.status(500).json({ message: 'Erreur serveur' });
 //   }
 // };
+// IMPORTS (ESM)
 import User from "../models/User.js";
+import Account from "../models/Account.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 
+
+
+//------------------- REGISTER -------------------
+// export const register = async (req, res) => {
+//   try {
+//     const { name, prenom, email, password, telephone, dateDeNaissance } = req.body;
+
+//     // Vérification des champs obligatoires
+//     if (!name || !prenom || !email || !password || !telephone || !dateDeNaissance)
+//       return res.status(400).json({ message: "Tous les champs sont obligatoires" });
+
+//     // Vérifier si l'utilisateur existe déjà
+//     const exists = await User.findOne({ email });
+//     if (exists) return res.status(400).json({ message: "Email déjà utilisé" });
+
+//     // Hachage du mot de passe
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Création de l'utilisateur
+//     const newUser = await User.create({
+//       name,
+//       prenom,
+//       email,
+//       password: hashedPassword,
+//       telephone,
+//       dateDeNaissance
+//     });
+
+//     // Création du compte courant avec IBAN unique
+//     let newAccount;
+//     let created = false;
+//     while (!created) {
+//       try {
+//         newAccount = await Account.create({
+//           userId: newUser._id,
+//           type: "courant",
+//           name: "Compte principal",
+//           balance: 0
+//         });
+//         created = true;
+//       } catch (err) {
+//         // Si IBAN dupliqué, on recommence
+//         if (err.code !== 11000) throw err;
+//       }
+//     }
+
+//     res.status(201).json({
+//       message: "Inscription réussie",
+//       user: {
+//         id: newUser._id,
+//         name: newUser.name,
+//         prenom: newUser.prenom,
+//         email: newUser.email,
+//         telephone: newUser.telephone,
+//         dateDeNaissance: newUser.dateDeNaissance
+//       },
+//       account: {
+//         id: newAccount._id,
+//         type: newAccount.type,
+//         name: newAccount.name,
+//         balance: newAccount.balance,
+//         iban: newAccount.iban
+//       }
+//     });
+
+//   } catch (err) {
+//     console.error("ERREUR inscription :", err);
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
+
+// // ------------------- LOGIN -------------------
+// export const login = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const user = await User.findOne({ email });
+//     if (!user) return res.status(400).json({ message: "Email incorrect" });
+
+//     const match = await bcrypt.compare(password, user.password);
+//     if (!match) return res.status(400).json({ message: "Mot de passe incorrect" });
+
+//     const token = jwt.sign(
+//       { id: user._id },
+//       process.env.JWT_SECRET,
+//       { expiresIn: "7d" }
+//     );
+
+//     res.json({
+//       message: "Connexion réussie",
+//       token,
+//       user: {
+//         id: user._id,
+//         email: user.email
+//       }
+//     });
+//   } catch (err) {
+//     console.log("ERREUR LOGIN :", err);
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 // ------------------- REGISTER -------------------
 export const register = async (req, res) => {
   try {
-    const { name, prenom, email, password, dateDeNaissance } = req.body;
+    const { name, prenom, email, password, telephone, dateDeNaissance } = req.body;
 
-    if (!name || !prenom || !email || !password || !dateDeNaissance)
+    if (!name || !prenom || !email || !password || !telephone || !dateDeNaissance)
       return res.status(400).json({ message: "Tous les champs sont obligatoires" });
 
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ message: "Email déjà utilisé" });
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await User.create({
       name,
       prenom,
       email,
-      password: hashed,
-      dateDeNaissance,
+      password: hashedPassword,
+      telephone,
+      dateDeNaissance
     });
+
+    // Création du compte courant par défaut
+    let newAccount;
+    let created = false;
+    while (!created) {
+      try {
+        newAccount = await Account.create({
+          userId: newUser._id,
+          type: "courant",
+          name: "Compte principal",
+          balance: 0
+        });
+        created = true;
+      } catch (err) {
+        if (err.code !== 11000) throw err; // IBAN dupliqué
+      }
+    }
 
     res.status(201).json({
       message: "Inscription réussie",
@@ -75,11 +197,19 @@ export const register = async (req, res) => {
         name: newUser.name,
         prenom: newUser.prenom,
         email: newUser.email,
+        telephone: newUser.telephone,
         dateDeNaissance: newUser.dateDeNaissance
+      },
+      account: {
+        id: newAccount._id,
+        type: newAccount.type,
+        name: newAccount.name,
+        balance: newAccount.balance,
+        iban: newAccount.iban
       }
     });
   } catch (err) {
-    console.log("ERREUR REGISTER :", err);
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -88,32 +218,24 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Email incorrect" });
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ message: "Mot de passe incorrect" });
 
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET || "SECRET123",
-      { expiresIn: "7d" }
-    );
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     res.json({
       message: "Connexion réussie",
       token,
       user: {
         id: user._id,
-        name: user.name,
-        prenom: user.prenom,
-        email: user.email,
-        dateDeNaissance: user.dateDeNaissance
+        email: user.email
       }
     });
   } catch (err) {
-    console.log("ERREUR LOGIN :", err);
+    console.log(err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -129,7 +251,7 @@ export const forgotPassword = async (req, res) => {
 
     const token = crypto.randomBytes(20).toString("hex");
     user.resetToken = token;
-    user.resetTokenExpire = Date.now() + 3600000; // 1h
+    user.resetTokenExpire = Date.now() + 3600000;
     await user.save();
 
     const resetURL = `http://localhost:5173/reset-password/${token}`;
@@ -143,12 +265,12 @@ export const forgotPassword = async (req, res) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Réinitialisation du mot de passe",
-      html: `<p>Cliquez ici pour réinitialiser votre mot de passe : <a href="${resetURL}">${resetURL}</a></p>`
+      html: `<p>Cliquez ici : <a href="${resetURL}">${resetURL}</a></p>`
     });
 
     res.json({ message: "Email envoyé !" });
   } catch (err) {
-    console.log("ERREUR FORGOT PASSWORD :", err);
+    console.log("ERREUR : MOT DE PASSE OUBLIÉ :", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -159,9 +281,11 @@ export const resetPassword = async (req, res) => {
     const { token } = req.params;
     const { password } = req.body;
 
-    if (!token || !password) return res.status(400).json({ message: "Token et nouveau mot de passe requis" });
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpire: { $gt: Date.now() }
+    });
 
-    const user = await User.findOne({ resetToken: token, resetTokenExpire: { $gt: Date.now() } });
     if (!user) return res.status(400).json({ message: "Lien invalide ou expiré" });
 
     user.password = await bcrypt.hash(password, 10);
@@ -169,9 +293,10 @@ export const resetPassword = async (req, res) => {
     user.resetTokenExpire = null;
     await user.save();
 
-    res.json({ message: "Mot de passe réinitialisé avec succès !" });
+    res.json({ message: "Mot de passe réinitialisé !" });
+
   } catch (err) {
-    console.log("ERREUR RESET PASSWORD :", err);
+    console.log("ERREUR RÉINITIALISATION DU MOT DE PASSE :", err);
     res.status(500).json({ message: err.message });
   }
 };
