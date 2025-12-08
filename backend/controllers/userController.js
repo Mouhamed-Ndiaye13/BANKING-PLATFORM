@@ -1,7 +1,8 @@
-const User = require("../models/User");
+// controllers/userController.js
+import User from "../models/User.js";
 
 // GET /users/me
-const me = async (req, res) => {
+export const me = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     res.json(user);
@@ -11,7 +12,7 @@ const me = async (req, res) => {
 };
 
 // GET /users
-const list = async (req, res) => {
+export const list = async (req, res) => {
   try {
     const users = await User.find().select("-password");
     res.json(users);
@@ -21,7 +22,7 @@ const list = async (req, res) => {
 };
 
 // GET /users/:id
-const get = async (req, res) => {
+export const get = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
     if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
@@ -32,7 +33,7 @@ const get = async (req, res) => {
 };
 
 // PUT /users/:id
-const update = async (req, res) => {
+export const update = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.params.id,
@@ -46,7 +47,7 @@ const update = async (req, res) => {
 };
 
 // DELETE /users/:id
-const remove = async (req, res) => {
+export const remove = async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
@@ -54,12 +55,4 @@ const remove = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Erreur serveur" });
   }
-};
-
-module.exports = {
-  me,
-  list,
-  get,
-  update,
-  remove
 };
