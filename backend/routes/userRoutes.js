@@ -1,14 +1,14 @@
+import express from "express";
+import { list, get, update, remove, create } from "../controllers/userController.js";
+import auth from "../middleware/auth.js";
+import isAdmin from "../middleware/isAdmin.js";
 
-const express = require('express');
 const router = express.Router();
-const ctrl = require('../controllers/userController');
-const auth = require('../middleware/auth');
-const isAdmin = require('../middleware/isAdmin');
 
-// CRUD utilisateurs (protégé)
-router.get('/', auth, isAdmin, ctrl.list);
-router.get('/:id', auth, isAdmin, ctrl.get);
-router.put('/:id', auth, isAdmin, ctrl.update);
-router.delete('/:id', auth, isAdmin, ctrl.remove);
+router.get("/", auth, isAdmin, list);
+router.get("/:id", auth, isAdmin, get);
+router.put("/:id", auth, isAdmin, update);
+router.delete("/:id", auth, isAdmin, remove);
+router.post("/", auth, isAdmin, create);
 
-module.exports = router;
+export default router;

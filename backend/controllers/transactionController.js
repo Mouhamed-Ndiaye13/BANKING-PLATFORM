@@ -1,9 +1,9 @@
+// controllers/transactionController.js
+import Transaction from "../models/Transaction.js";
+import Account from "../models/Account.js";
 
-//Revenu du mois, Dépense du mois, Nombre transactions du mois, Liste complète des transactions filtrables
-const Transaction = require("../models/Transaction");
-const Account = require("../models/Account");
-
-exports.getTransactions = async (req, res) => {
+// ---------- GET toutes les transactions avec filtres ----------
+export const getTransactions = async (req, res) => {
   try {
     const userId = req.user.id;
     const { type, startDate, endDate } = req.query;
@@ -19,12 +19,12 @@ exports.getTransactions = async (req, res) => {
       .populate("destinationAccount")
       .sort({ createdAt: -1 });
 
-    // Début et fin du mois pour cartes
+    // Début et fin du mois
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
 
-    const transactionsThisMonth = transactions.filter(t =>
-      t.date >= startOfMonth && t.date <= endOfMonth
+    const transactionsThisMonth = transactions.filter(
+      t => t.date >= startOfMonth && t.date <= endOfMonth
     );
 
     const revenueThisMonth = transactionsThisMonth
@@ -43,20 +43,22 @@ exports.getTransactions = async (req, res) => {
       totalTransactionsThisMonth,
       transactions
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-exports.getTransactionById = async (req, res) => {
+// ---------- GET transaction par ID ----------
+export const getTransactionById = async (req, res) => {
   try {
     const userId = req.user.id;
 
     const transaction = await Transaction.findOne({
       _id: req.params.id,
       user: userId
-    }).populate("sourceAccount").populate("destinationAccount");
+    })
+      .populate("sourceAccount")
+      .populate("destinationAccount");
 
     if (!transaction) return res.status(404).json({ message: "Transaction introuvable" });
 
@@ -65,4 +67,3 @@ exports.getTransactionById = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-

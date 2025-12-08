@@ -1,12 +1,18 @@
 
-const router = require("express").Router();
-const auth = require("../middleware/auth");
-const transferCtrl = require("../controllers/transferController");
+// routes/transferRoutes.js
+import { Router } from "express";
+import auth from "../middleware/auth.js";
+import {
+  internalTransfer,
+  externalTransfer
+} from "../controllers/transferController.js";
+
+const router = Router();
 
 // Internal transfer
-router.post("/internal", auth, transferCtrl.internalTransfer);
+router.post("/internal", auth, internalTransfer);
 
 // External transfer
-router.post("/external", auth, transferCtrl.externalTransfer);
+router.post("/external", auth, externalTransfer);
 
-module.exports = router;
+export default router;
