@@ -2,6 +2,7 @@
   "name": "banking-backend",
   "version": "1.0.0",
   "description": "Backend pour l'application bancaire React",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -18,7 +19,7 @@
     "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.8.7",
-    "nodemailer": "^6.9.0"
+    "nodemailer": "^6.10.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"

@@ -1,65 +1,38 @@
-const User = require("../models/User");
+// controllers/userController.js
+import User from "../models/User.js";
 
-// GET /users/me
-const me = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("-password");
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
+// Lister tous les utilisateurs (sans mot de passe)
+export const list = async (req, res) => {
+  const users = await User.find().select("-password");
+  res.json(users);
 };
 
-// GET /users
-const list = async (req, res) => {
-  try {
-    const users = await User.find().select("-password");
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
+// Récupérer un utilisateur par ID
+export const get = async (req, res) => {
+  const user = await User.findById(req.params.id).select("-password");
+  if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+  res.json(user);
 };
 
-// GET /users/:id
-const get = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select("-password");
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
+// Mettre à jour un utilisateur
+export const update = async (req, res) => {
+  const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true }).select("-password");
+  res.json(updatedUser);
 };
 
-// PUT /users/:id
-const update = async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    ).select("-password");
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
+// Supprimer un utilisateur
+export const remove = async (req, res) => {
+  await User.findByIdAndDelete(req.params.id);
+  res.json({ message: "Utilisateur supprimé" });
 };
 
-// DELETE /users/:id
-const remove = async (req, res) => {
+// Créer un utilisateur
+export const create = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
-    res.json({ message: "Utilisateur supprimé" });
+    const user = new User(req.body);
+    await user.save();
+    res.status(201).json(user);
   } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(400).json({ message: err.message });
   }
-};
-
-module.exports = {
-  me,
-  list,
-  get,
-  update,
-  remove
 };

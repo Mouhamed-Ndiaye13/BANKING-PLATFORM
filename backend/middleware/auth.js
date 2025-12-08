@@ -1,18 +1,34 @@
-const jwt = require("jsonwebtoken");
+// const jwt = require('jsonwebtoken');
 
-module.exports = (req, res, next) => {
-    const authHeader = req.headers.authorization;
+// module.exports = (req, res, next) => {
+//   const authHeader = req.headers['authorization'];
+//   const token = authHeader && authHeader.split(' ')[1];
+//   if (!token) return res.status(401).json({ message: 'Token manquant' });
 
-    if (!authHeader)
-        return res.status(401).json({ error: "No token" });
+//   try {
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     req.user = decoded;
+//     next();
+//   } catch (err) {
+//     res.status(401).json({ message: 'Token invalide' });
+//   }
+// };
+// auth.js
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 
-    const token = authHeader.split(" ")[1];
+const auth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "Token manquant" });
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (err) {
-        res.status(401).json({ error: "Invalid token" });
-    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = { id: decoded.id };
+
+    next();
+  } catch (err) {
+    res.status(401).json({ message: "Token invalide" });
+  }
 };
+
+export default auth; // <-- c'est ça qu'il faut
