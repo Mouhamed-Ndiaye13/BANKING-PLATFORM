@@ -27,17 +27,23 @@ export const changePassword = async (req, res) => {
     const { oldPassword, newPassword } = req.body;
     const userId = req.user.id;
 
+    if (!oldPassword || !newPassword)
+      return res.status(400).json({ error: "Ancien et nouveau mot de passe requis" });
+
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) return res.status(404).json({ error: "Utilisateur introuvable" });
 
     const isMatch = await user.comparePassword(oldPassword);
     if (!isMatch)
-      return res.status(400).json({ error: "Old password incorrect" });
+      return res.status(400).json({ error: "Ancien mot de passe incorrect" });
 
-    user.password = newPassword;
-    await user.save();
+    // Protection : ne pas sauvegarder un password vide
+    if (newPassword && newPassword.trim() !== "") {
+      user.password = newPassword;
+      await user.save();
+    }
 
-    res.json({ message: "Password changed successfully" });
+    res.json({ message: "Mot de passe modifié avec succès" });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -50,7 +56,7 @@ export const updateAvatar = async (req, res) => {
     const userId = req.user.id;
 
     if (!req.file)
-      return res.status(400).json({ error: "No image uploaded" });
+      return res.status(400).json({ error: "Aucune image téléchargée" });
 
     const imagePath = `/uploads/${req.file.filename}`;
 
@@ -61,7 +67,7 @@ export const updateAvatar = async (req, res) => {
     ).select("-password");
 
     res.json({
-      message: "Avatar updated",
+      message: "Avatar mis à jour",
       user: updatedUser
     });
 
