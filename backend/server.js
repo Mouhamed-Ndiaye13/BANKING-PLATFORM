@@ -15,8 +15,14 @@ import settingsRoutes from "./routes/settingsRoutes.js";
 dotenv.config();
 
 const app = express();
+// app.use(cors());
+// app.use(express.json());
+
+
+// Middleware global
 app.use(cors());
-app.use(express.json());
+app.use(express.json());            // Parse application/json
+app.use(express.urlencoded({ extended: true })); // Parse application/x-www-form-urlencoded
 
 // Routes principales
 app.use("/api/auth", authRoutes);
@@ -28,14 +34,14 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/settings", settingsRoutes); 
 
 // Test
-app.get("/", (req, res) => res.send("Backend Banque Rewmi ✔"));
+app.get("/", (req, res) => res.send("Backend Banque Rewmi "));
 
 // MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connecté ✔"))
+  .then(() => console.log("MongoDB connecté "))
   .catch((err) => console.error("Erreur MongoDB :", err));
 
 // Start serveur
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✔ Backend running on port ${PORT}`));
+app.listen(PORT, () => console.log(` Backend running on port ${PORT}`));

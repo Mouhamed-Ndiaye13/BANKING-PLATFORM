@@ -10,3 +10,4 @@ router.put("/change-password", auth, changePassword);
 router.put("/update-avatar", auth, upload.single("avatar"), updateAvatar);
 
 export default router;
+
