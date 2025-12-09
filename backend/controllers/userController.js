@@ -1,9 +1,17 @@
+// // controllers/userController.js
 // import User from "../models/User.js";
-// import bcrypt from "bcrypt";
 
-// // ================================
-// //      GET ALL USERS
-// // ================================
+// // GET /users/me
+// export const me = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.user.id).select("-password");
+//     res.json(user);
+//   } catch (err) {
+//     res.status(500).json({ message: "Erreur serveur" });
+//   }
+// };
+
+// // GET /users
 // export const list = async (req, res) => {
 //   try {
 //     const users = await User.find().select("-password");
@@ -13,28 +21,22 @@
 //   }
 // };
 
-// // ================================
-// //      GET USER BY ID
-// // ================================
+// // GET /users/:id
 // export const get = async (req, res) => {
 //   try {
 //     const user = await User.findById(req.params.id).select("-password");
 //     if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
-    
 //     res.json(user);
 //   } catch (err) {
 //     res.status(500).json({ message: err.message });
 //   }
 // };
 
-// // ================================
-// //      CREATE USER
-// // ================================
-// export const create = async (req, res) => {
+// // PUT /users/:id
+// export const update = async (req, res) => {
 //   try {
 //     const { name, prenom, email, password, telephone, dateDeNaissance } = req.body;
 
-//     // Vérifier si l'utilisateur existe déjà
 //     const exists = await User.findOne({ email });
 //     if (exists) return res.status(400).json({ message: "Email déjà utilisé" });
 
@@ -45,8 +47,8 @@
 //       prenom,
 //       email,
 //       telephone,
+//       password: hashedPassword,
 //       dateDeNaissance,
-//       password: hashedPassword
 //     });
 
 //     res.status(201).json(user);
@@ -55,10 +57,8 @@
 //   }
 // };
 
-// // ================================
-// //      UPDATE USER (admin)
-// // ================================
-// export const update = async (req, res) => {
+// // DELETE /users/:id
+// export const remove = async (req, res) => {
 //   try {
 //     const updatedUser = await User
 //       .findByIdAndUpdate(req.params.id, req.body, { new: true })
@@ -72,10 +72,8 @@
 //   }
 // };
 
-// // ================================
-// //      DELETE USER
-// // ================================
-// export const remove = async (req, res) => {
+// // DELETE (admin)
+// export const removeAdmin = async (req, res) => {
 //   try {
 //     await User.findByIdAndDelete(req.params.id);
 //     res.json({ message: "Utilisateur supprimé" });
@@ -84,71 +82,21 @@
 //   }
 // };
 
-// // ================================
-// //      UPDATE PROFILE (user)
-// // ================================
-// export const updateProfile = async (req, res) => {
-//   try {
-//     const userId = req.user.id; // Depuis middleware JWT
-    
-//     const updatedUser = await User
-//       .findByIdAndUpdate(userId, req.body, { new: true })
-//       .select("-password");
 
-//     res.json(updatedUser);
-//   } catch (err) {
-//     res.status(400).json({ message: err.message });
-//   }
-// };
-
-// // ================================
-// //      UPDATE PASSWORD
-// // ================================
-// export const updatePassword = async (req, res) => {
-//   try {
-//     const { oldPassword, newPassword } = req.body;
-
-//     const user = await User.findById(req.user.id);
-//     if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
-
-//     const isMatch = await bcrypt.compare(oldPassword, user.password);
-//     if (!isMatch) return res.status(400).json({ message: "Ancien mot de passe incorrect" });
-
-//     user.password = await bcrypt.hash(newPassword, 10);
-//     await user.save();
-
-//     res.json({ message: "Mot de passe mis à jour avec succès" });
-
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-// // ================================
-// //      UPDATE AVATAR (upload)
-// // ================================
-// export const updateAvatar = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-
-//     if (!req.file) return res.status(400).json({ message: "Aucune image téléchargée" });
-
-//     const imagePath = `/uploads/${req.file.filename}`;
-
-//     const updatedUser = await User
-//       .findByIdAndUpdate(userId, { avatar: imagePath }, { new: true })
-//       .select("-password");
-
-//     res.json(updatedUser);
-
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
+import bcrypt from "bcrypt";
 import User from "../models/User.js";
-import bcrypt from "bcryptjs";
 
-// GET all users (admin)
+// ----- GET /users/me -----
+export const me = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// ----- GET /users ----- 
 export const list = async (req, res) => {
   try {
     const users = await User.find().select("-password");
@@ -158,7 +106,7 @@ export const list = async (req, res) => {
   }
 };
 
-// GET by id (admin)
+// ----- GET /users/:id -----
 export const get = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
@@ -169,8 +117,8 @@ export const get = async (req, res) => {
   }
 };
 
-// CREATE user (admin)
-export const create = async (req, res) => {
+// ----- POST /users (admin) -----
+export const createUser = async (req, res) => {
   try {
     const { name, prenom, email, password, telephone, dateDeNaissance } = req.body;
 
@@ -194,23 +142,19 @@ export const create = async (req, res) => {
   }
 };
 
-// UPDATE user (admin)
+// ----- PUT /users/:id (admin) -----
 export const update = async (req, res) => {
   try {
-    const updatedUser = await User
-      .findByIdAndUpdate(req.params.id, req.body, { new: true })
-      .select("-password");
-
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true }).select("-password");
     if (!updatedUser) return res.status(404).json({ message: "Utilisateur non trouvé" });
-
     res.json(updatedUser);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 
-// DELETE (admin)
-export const remove = async (req, res) => {
+// ----- DELETE /users/:id (admin) -----
+export const removeAdmin = async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: "Utilisateur supprimé" });
@@ -219,25 +163,27 @@ export const remove = async (req, res) => {
   }
 };
 
-// Update own profile (user)
+// ----- PUT /users/update-profile -----
 export const updateProfile = async (req, res) => {
   try {
-    const updatedUser = await User
-      .findByIdAndUpdate(req.user.id, req.body, { new: true })
-      .select("-password");
-
-    res.json(updatedUser);
+    const updatedUser = await User.findByIdAndUpdate(req.user.id, req.body, { new: true }).select("-password");
+    res.json({
+      message: "Profile updated",
+      user: updatedUser
+    });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 
-// Update own password (user)
+// ----- PUT /users/update-password -----
 export const updatePassword = async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) return res.status(400).json({ message: "Old and new password required" });
 
     const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
 
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) return res.status(400).json({ message: "Ancien mot de passe incorrect" });
@@ -245,22 +191,24 @@ export const updatePassword = async (req, res) => {
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    res.json({ message: "Mot de passe changé" });
+    res.json({ message: "Mot de passe mis à jour avec succès" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Upload avatar (user)
+// ----- POST /users/upload-photo -----
 export const updateAvatar = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: "Image obligatoire" });
+    if (!req.file) return res.status(400).json({ message: "Aucune image téléchargée" });
 
-    const updatedUser = await User
-      .findByIdAndUpdate(req.user.id, { avatar: `/uploads/${req.file.filename}` }, { new: true })
-      .select("-password");
+    const imagePath = `/uploads/${req.file.filename}`;
+    const updatedUser = await User.findByIdAndUpdate(req.user.id, { avatar: imagePath }, { new: true }).select("-password");
 
-    res.json(updatedUser);
+    res.json({
+      message: "Avatar mis à jour",
+      user: updatedUser
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

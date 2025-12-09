@@ -11,6 +11,7 @@ import transactionRoutes from "./routes/transactionRoutes.js";
 import transferRoutes from "./routes/transferRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js"; 
+import supportRoutes from './routes/supportRoutes.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ const app = express();
 
 
 // Middleware global
+
 app.use(cors());
 app.use(express.json());            // Parse application/json
 app.use(express.urlencoded({ extended: true })); // Parse application/x-www-form-urlencoded
@@ -32,6 +34,7 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/transfers", transferRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/settings", settingsRoutes); 
+app.use('/api/support', supportRoutes);
 
 // Test
 app.get("/", (req, res) => res.send("Backend Banque Rewmi "));
