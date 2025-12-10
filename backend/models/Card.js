@@ -25,7 +25,7 @@ const CardSchema = new mongoose.Schema({
     required: true
   },
   expiration: {
-    type: String, // MM/YY
+    type: String, 
     required: true
   },
   status: {
@@ -37,10 +37,12 @@ const CardSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+   pinHash:
+    { type: String },
   limitQuoti: {
     type: Number,
-    default: 500000 // = 5000€ si centimes
-  }
-}, { timestamps: true });
+    default: 500000 
+  },
+ }, { timestamps: true });
 
 export default mongoose.model("Card", CardSchema);

@@ -1,6 +1,7 @@
 import Card from "../models/Card.js";
 import Account from "../models/Account.js";
 import { generateCardToken, getExpiration } from "../utils/card.js";
+import bcrypt from "bcrypt";
 
 export const createCard = async (req, res) => {
   try {
@@ -41,8 +42,9 @@ export const createCard = async (req, res) => {
       dernierCard: token.slice(-4),
       expiration: getExpiration(),
       status: "inactive",
-      LimitQuoti: 500000
+      limitQuoti: 500000
     });
+    
 
     return res.status(201).json({
       message: "Carte Mastercard créée",
@@ -52,7 +54,7 @@ export const createCard = async (req, res) => {
         dernierCard: card.dernierCard,
         expiration: card.expiration,
         status: card.status,
-        LimitQuoti: card.LimitQuoti
+        limitQuoti: card.limitQuoti
       }
     });
 
@@ -61,3 +63,85 @@ export const createCard = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
+export const activateCard = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    const card = await Card.findById(id);
+    if (!card) {
+      return res.status(404).json({ message: "Carte introuvable" });
+    }
+
+    if (card.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Accès interdit" });
+    }
+
+    if (card.status === "active") {
+      return res.status(400).json({ message: "Carte déjà active" });
+    }
+
+    if (!card.pinSet) {
+      return res.status(400).json({ message: "Définissez le PIN avant d'activer" });
+    }
+
+    if (card.status === "blocked") {
+      return res.status(400).json({ message: "Carte bloquée" });
+    }
+
+    card.status = "active";
+    await card.save();
+
+    return res.status(200).json({ message: "Carte activée avec succès" });
+
+  } catch (err) {
+    console.error("Erreur activation carte", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+
+export const setPin = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const { pin } = req.body;
+
+    if (!pin || !/^\d{4}$/.test(pin)) {
+      return res.status(400).json({ message: "Le PIN doit contenir 4 chiffres" });
+    }
+
+    const card = await Card.findById(id);
+    if (!card) {
+      return res.status(404).json({ message: "Carte introuvable" });
+    }
+
+    if (card.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Accès interdit" });
+    }
+
+    if (card.status === "blocked") {
+      return res.status(400).json({ message: "Carte bloquée" });
+    }
+
+    // Déjà défini ?
+    if (card.pinSet) {
+      return res.status(400).json({ message: "PIN déjà défini" });
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const pinHash = await bcrypt.hash(pin, salt);
+
+    card.pinHash = pinHash;
+    card.pinSet = true;
+    await card.save();
+
+    return res.status(200).json({ message: "PIN configuré avec succès" });
+
+  } catch (err) {
+    console.error("Erreur set PIN", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+

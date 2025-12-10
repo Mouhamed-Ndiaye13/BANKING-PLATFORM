@@ -23,17 +23,21 @@
 
 
 // avec authen
-const router = require("express").Router();
-const auth = require("../middleware/auth");
-const transactionCtrl = require("../controllers/transactionController");
+import { Router } from "express";
+import auth from "../middleware/auth.js";
+import {
+  getTransactions,
+  getTransactionById
+} from "../controllers/transactionController.js";
 
-// GET tous les transactions
-router.get("/", auth, transactionCtrl.getTransactions);
+const router = Router();
 
-// GET lire un transaction
-router.get("/:id", auth, transactionCtrl.getTransactionById);
+// GET all transactions
+router.get("/", auth, getTransactions);
 
-module.exports = router;
+// GET one transaction by ID
+router.get("/:id", auth, getTransactionById);
 
+export default router;
 
 

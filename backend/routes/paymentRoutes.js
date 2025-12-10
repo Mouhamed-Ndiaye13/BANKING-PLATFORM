@@ -1,12 +1,12 @@
-const express = require('express');
+import express from "express";
+import { payCard } from "../controllers/paymentController.js";
+import auth from "../middleware/auth.js";
+
+
 const router = express.Router();
-const auth = require('../middleware/auth');
-const isAdmin = require('../middleware/isAdmin');
-const ctrl = require('../controllers/paymentController');
 
-router.get('/', auth, ctrl.list);
-router.get('/:id', auth, ctrl.get);
-router.post('/', auth, ctrl.create);
-router.put('/:id', auth, isAdmin, ctrl.update);
+router.post("/pay", auth, payCard);
 
-module.exports = router;
+export default router;
+
+

@@ -1,8 +1,10 @@
 // routes/dashboard.routes.js
-const router = require("express").Router();
-const auth = require("../middleware/auth");
-const dashboardCtrl = require("../controllers/dashboardController");
+import express from "express";
+import auth from "../middleware/auth.js";
+import { getDashboardSummary } from "../controllers/dashboardController.js";
 
-router.get("/summary", auth, dashboardCtrl.getDashboardSummary);
+const router = express.Router();
 
-module.exports = router;
+router.get("/summary", auth, getDashboardSummary);
+
+export default router;

@@ -1,14 +1,17 @@
-
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-require("dotenv").config();
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
 
 // Import des routes
-const accountRoutes = require("./routes/accountRoutes");
-const transactionRoutes = require("./routes/transactionRoutes");
-const transferRoutes = require("./routes/transferRoutes");
-const dashboardRoutes = require("./routes/dashboardRoutes");
+import accountRoutes from "./routes/accountRoutes.js";
+import transactionRoutes from "./routes/transactionRoutes.js";
+import transferRoutes from "./routes/transferRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import carteRoutes from "./routes/carteRoutes.js";
+
+dotenv.config();
 
 const app = express();
 
@@ -21,13 +24,15 @@ app.use("/api/accounts", accountRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/transfers", transferRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/card", paymentRoutes);
+app.use("/api/card", carteRoutes);
 
 // Connexion à MongoDB
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
-.then(() => console.log("MongoDB connecté avec succès "))
+.then(() => console.log("MongoDB connecté avec succès"))
 .catch((err) => console.error("Erreur MongoDB :", err));
 
 // Port
