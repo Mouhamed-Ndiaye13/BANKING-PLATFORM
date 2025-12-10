@@ -1,13 +1,13 @@
 // controllers/dashboardController.js
-const Account = require("../models/Account");
-const Transaction = require("../models/Transaction");
+import Account from "../models/Account.js";
+import Transaction from "../models/Transaction.js";
 
-exports.getDashboardSummary = async (req, res) => {
+export const getDashboardSummary = async (req, res) => {
   try {
     const userId = req.user.id;
 
     // Comptes de l'utilisateur
-    const accounts = await Account.find({ user: userId });
+    const accounts = await Account.find({ userId });
     const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
     const mainAccount = accounts.find(acc => acc.type === "checking") || null;
 
@@ -17,7 +17,7 @@ exports.getDashboardSummary = async (req, res) => {
 
     // Transactions du mois
     const transactionsThisMonth = await Transaction.find({
-      user: userId,
+      userId,
       date: { $gte: startOfMonth, $lte: endOfMonth }
     });
 
