@@ -12,7 +12,7 @@ const UserSchema = new mongoose.Schema(
 
     avatar: {
       type: String,
-      default: "/uploads/default.png",
+      default: null,
     },
 
     resetToken: { type: String },
