@@ -12,17 +12,21 @@ import transferRoutes from "./routes/transferRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js"; 
 import supportRoutes from './routes/supportRoutes.js';
-
+import path from "path";
 dotenv.config();
-
 const app = express();
-// app.use(cors());
-// app.use(express.json());
 
 
-// Middleware global
 
-app.use(cors());
+
+const allowedOrigins = process.env.FRONTEND_URLS.split(",");
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
 app.use(express.json());            // Parse application/json
 app.use(express.urlencoded({ extended: true })); // Parse application/x-www-form-urlencoded
 
@@ -35,6 +39,8 @@ app.use("/api/transfers", transferRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/settings", settingsRoutes); 
 app.use('/api/support', supportRoutes);
+// Autoriser l'accès aux fichiers uploads
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Test
 app.get("/", (req, res) => res.send("Backend Banque Rewmi "));
