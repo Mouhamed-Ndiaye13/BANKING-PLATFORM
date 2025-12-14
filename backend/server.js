@@ -12,6 +12,7 @@ import transferRoutes from "./routes/transferRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js"; 
 import supportRoutes from './routes/supportRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js'
 import path from "path";
 dotenv.config();
 const app = express();
@@ -39,6 +40,7 @@ app.use("/api/transfers", transferRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/settings", settingsRoutes); 
 app.use('/api/support', supportRoutes);
+app.use('/api/categories', categoryRoutes);
 // Autoriser l'accès aux fichiers uploads
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
