@@ -12,6 +12,7 @@ import transferRoutes from "./routes/transferRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js"; 
 import supportRoutes from './routes/supportRoutes.js';
+import adminRoutes from "./routes/admin.routes.js";
 
 dotenv.config();
 
@@ -22,7 +23,9 @@ const app = express();
 
 // Middleware global
 
-app.use(cors());
+app.use(cors({
+  origin: "*", // Autorise toutes les origines
+}));
 app.use(express.json());            // Parse application/json
 app.use(express.urlencoded({ extended: true })); // Parse application/x-www-form-urlencoded
 
@@ -36,8 +39,14 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/settings", settingsRoutes); 
 app.use('/api/support', supportRoutes);
 
+// Toutes les routes admin commencent par /admin
+app.use("/admin", adminRoutes);
+
+
 // Test
-app.get("/", (req, res) => res.send("Backend Banque Rewmi "));
+app.get("/test", (req, res) => {
+  res.send("Test OK");
+});
 
 // MongoDB
 mongoose
@@ -47,4 +56,5 @@ mongoose
 
 // Start serveur
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(` Backend running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => console.log(`Backend running on port ${PORT}`));
+
