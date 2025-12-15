@@ -11,6 +11,8 @@ import transactionRoutes from "./routes/transactionRoutes.js";
 import transferRoutes from "./routes/transferRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js"; 
+import notificationRoutes from "./routes/notificationRoutes.js";
+
 
 dotenv.config();
 
@@ -25,7 +27,8 @@ app.use("/api/accounts", accountRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/transfers", transferRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/settings", settingsRoutes); 
+app.use("/api/settings", settingsRoutes);
+app.use("/api/notifications", notificationRoutes); 
 
 // Test
 app.get("/", (req, res) => res.send("Backend Banque Rewmi ✔"));
