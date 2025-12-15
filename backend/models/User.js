@@ -32,6 +32,16 @@ UserSchema.pre("save", async function (next) {
   }
 });
 
+// ajouter par mouhamed ndiaye
+UserSchema.virtual("accounts", {
+  ref: "Account",
+  localField: "_id",
+  foreignField: "userId"
+});
+
+UserSchema.set("toObject", { virtuals: true });
+UserSchema.set("toJSON", { virtuals: true });
+
 // Comparer le mot de passe
 UserSchema.methods.comparePassword = async function (enteredPassword) {
   if (!enteredPassword || !this.password) return false;
