@@ -1,4 +1,3 @@
-
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
@@ -11,6 +10,7 @@ import accountRoutes from "./routes/accountRoutes.js";
 import transactionRoutes from "./routes/transactionRoutes.js";
 import transferRoutes from "./routes/transferRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js"; // ✅ Import du module paiement
 
 dotenv.config();
 
@@ -25,6 +25,7 @@ app.use("/api/accounts", accountRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/transfers", transferRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/payments", paymentRoutes); // ✅ Route paiement
 
 // Route test simple
 app.get("/", (req, res) => res.send("Backend Banque Rewmi ✔"));
@@ -40,4 +41,3 @@ mongoose.connect(process.env.MONGO_URI, {
 // Start serveur
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT} ✔`));
-
