@@ -25,6 +25,7 @@ export const getProfile = async (req, res) => {
       prenom: user.prenom,
       name: user.name,
       email: user.email,
+     telephone: user.telephone,
       avatar: avatarUrl,
     });
   } catch (err) {
