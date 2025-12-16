@@ -1,34 +1,20 @@
-// const jwt = require('jsonwebtoken');
-
-// module.exports = (req, res, next) => {
-//   const authHeader = req.headers['authorization'];
-//   const token = authHeader && authHeader.split(' ')[1];
-//   if (!token) return res.status(401).json({ message: 'Token manquant' });
-
-//   try {
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//     req.user = decoded;
-//     next();
-//   } catch (err) {
-//     res.status(401).json({ message: 'Token invalide' });
-//   }
-// };
-// auth.js
+// middleware/auth.js
 import jwt from "jsonwebtoken";
-import User from "../models/User.js";
 
-const auth = async (req, res, next) => {
+export default function auth(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ error: "No token" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ message: "Token manquant" });
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: decoded.id };
-
+    req.user = decoded;
     next();
   } catch (err) {
-    res.status(401).json({ message: "Token invalide" });
+    res.status(401).json({ error: "Invalid token" });
   }
-};
-
-export default auth; // <-- c'est ça qu'il faut
+}
