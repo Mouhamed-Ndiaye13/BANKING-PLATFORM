@@ -1,7 +1,6 @@
 import express from "express";
 import auth from "../middleware/auth.js";
 import isAdmin from "../middleware/isAdmin.js";
-import { getMe } from "../controllers/userController.js";
 import upload from "../middleware/uploadMiddleware.js";
 import { me } from "../controllers/userController.js";
 
