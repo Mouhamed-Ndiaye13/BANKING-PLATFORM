@@ -10,7 +10,7 @@ router.post('/', auth, ctrl.create);
 router.get('/:id', auth, ctrl.get);
 
 // Admin
-router.get('/', auth, ctrl.list);n
+router.get('/', auth, ctrl.list);
 router.put('/:id', auth, ctrl.update);
 
 export default router;
