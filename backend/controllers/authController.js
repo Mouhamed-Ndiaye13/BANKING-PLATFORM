@@ -8,63 +8,66 @@ import nodemailer from "nodemailer";
 // ------------------- REGISTER -------------------
 export const register = async (req, res) => {
   try {
-    const { name, prenom, email, password, telephone, dateDeNaissance } = req.body;
+    const { prenom, name, email, password, telephone, dateDeNaissance} = req.body;
 
-    if (!name || !prenom || !email || !password || !telephone || !dateDeNaissance) {
-      return res.status(400).json({ message: "Tous les champs sont obligatoires" });
-    }
-
-    const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ message: "Email déjà utilisé" });
-
-    // Hash du mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Création de l'utilisateur avec mot de passe hashé
-    const newUser = await User.create({
-      name,
-      prenom,
-      email,
-      password: hashedPassword,  // 
-      telephone,
-      dateDeNaissance
-    });
-
-    // Création automatique du compte courant
-    const newAccount = await Account.create({
-      userId: newUser._id,
-      type: "courant",
-      name: "Compte principal"
-    });
-
-    res.status(201).json({
-      message: "Inscription réussie",
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        prenom: newUser.prenom,
-        email: newUser.email,
-        telephone: newUser.telephone,
-        dateDeNaissance: newUser.dateDeNaissance
-      },
-      account: {
-        id: newAccount._id,
-        type: newAccount.type,
-        name: newAccount.name,
-        balance: newAccount.balance,
-        accountNumber: newAccount.accountNumber
-      }
-    });
-
-  } catch (err) {
-    console.error("ERREUR REGISTER:", err);
-
-    if (err.code === 11000 && err.keyPattern?.email) {
+    const exist = await User.findOne({ email });
+    if (exist) {
       return res.status(400).json({ message: "Email déjà utilisé" });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Création utilisateur
+    const user = await User.create({
+      prenom,
+      name,
+      email,
+      telephone,
+      dateDeNaissance,
+      password: hashedPassword,
+      role: "user"
+    });
+
+    //  Création AUTOMATIQUE des 3 comptes
+    const accounts = await Account.insertMany([
+      {
+        userId: user._id,
+        type: "courant",
+        name: "Compte courant",
+        balance: 0
+      },
+      {
+        userId: user._id,
+        type: "epargne",
+        name: "Compte épargne",
+        balance: 0
+      },
+      {
+        userId: user._id,
+        type: "business",
+        name: "Compte business",
+        balance: 0
+      }
+    ]);
+
+    res.status(201).json({
+      message: "Utilisateur créé avec ses comptes",
+      user,
+      accounts
+    });
+
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
     res.status(500).json({ message: err.message });
   }
+};
+
+// modifier par mouhamed ndiaye dans accountController
+// ---------- CREATE nouveau compte ----------
+export const createAccount = async (req, res) => {
+  return res.status(403).json({
+    message: "Les comptes sont créés automatiquement à l’inscription."
+  });
 };
 
 // ------------------- LOGIN -------------------

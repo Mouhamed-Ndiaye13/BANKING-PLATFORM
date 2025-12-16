@@ -21,6 +21,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 
 
+import beneficiaireRoutes from "./routes/beneficiaireRoutes.js";
 dotenv.config();
 const app = express();
 
@@ -35,8 +36,8 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());            // Parse application/json
-app.use(express.urlencoded({ extended: true })); // Parse application/x-www-form-urlencoded
+app.use(express.json());            
+app.use(express.urlencoded({ extended: true }));
 
 // Session (pour Google Auth)
 app.use(
@@ -67,12 +68,14 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/settings", settingsRoutes); 
 app.use('/api/support', supportRoutes);
 app.use('/api/categories', categoryRoutes);
-// Autoriser l'accès aux fichiers uploads
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/payments", paymentRoutes); 
+
+
 app.use("/api/notifications", notificationRoutes);
 
 
+app.use("/api/beneficiaires", beneficiaireRoutes);
 // Test
 app.get("/", (req, res) => res.send("Backend Banque Rewmi "));
 
