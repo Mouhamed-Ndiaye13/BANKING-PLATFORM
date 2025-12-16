@@ -43,7 +43,7 @@ export const createAccount = async (req, res) => {
     if (!allowed.includes(type))
       return res.status(400).json({ message: "Type de compte invalide." });
 
-    // ❌ IMPORTANT : Empêcher uniquement la CREATION MANUELLE du compte courant
+    //  IMPORTANT : Empêcher uniquement la CREATION MANUELLE du compte courant
     if (type === "courant") {
       return res
         .status(403)
