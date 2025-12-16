@@ -1,13 +1,13 @@
+// routes/paymentRoutes.js
+import { Router } from "express";
+import { makePayment, getPayments } from "../controllers/paymentController.js";
 
-import express from "express";
-import { payCard } from "../controllers/paymentController.js";
-import auth from "../middleware/auth.js";
+const router = Router();
 
+// Endpoint pour effectuer un paiement
+router.post("/", makePayment);
 
-const router = express.Router();
-
-router.post("/pay", auth, payCard);
+// Endpoint pour récupérer l'historique des paiements d'un compte
+router.get("/:accountId", getPayments);
 
 export default router;
-
-
