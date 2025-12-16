@@ -13,7 +13,7 @@ const TransactionSchema = new mongoose.Schema({
   },
   amount: { type: Number, required: true },
   category: { type: String },
-   cardId: { type: mongoose.Schema.Types.ObjectId, ref: "Card", required: true },
+   cardId: { type: mongoose.Schema.Types.ObjectId, ref: "Card", required: false },
   merchant: { type: String },
   date: { type: Date, default: Date.now },
   label: { type: String }

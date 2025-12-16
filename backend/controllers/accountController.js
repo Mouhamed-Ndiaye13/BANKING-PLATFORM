@@ -147,3 +147,15 @@ export const deleteAccount = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+//verifie le solde
+export const getBalance = async (req, res) => {
+  try {
+    const accountId = req.params.accountId;
+    const account = await Account.findById(accountId);
+    if (!account) return res.status(404).json({ error: "Compte introuvable" });
+
+    res.json({ balance: account.balance });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
