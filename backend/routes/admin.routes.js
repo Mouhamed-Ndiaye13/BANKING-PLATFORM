@@ -1,5 +1,15 @@
 import express from "express";
-import { loginAdmin, getUsers, getAccounts, getTransactions, cancelTransaction, depositToAccount,withdrawFromAccount, deleteUser, toggleBlockUser,getTransactions, cancelTransaction  } from "../controllers/admin.controller.js";
+import {
+  loginAdmin,
+  getUsers,
+  getAccounts,
+  getTransactions,
+  cancelTransaction,
+  depositToAccount,
+  withdrawFromAccount,
+  deleteUser,
+  toggleBlockUser
+} from "../controllers/admin.controller.js";
 import adminAuth from "../middleware/adminAuth.js"; // middleware JWT admin
 
 const router = express.Router();
