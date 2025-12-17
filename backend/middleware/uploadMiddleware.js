@@ -1,32 +1,27 @@
-// const multer = require("multer");
-// const path = require("path");
 
-// const storage = multer.diskStorage({
-//     destination: (req, file, cb) => {
-//         cb(null, "uploads/");
-//     },
-//     filename: (req, file, cb) => {
-//         cb(null, Date.now() + path.extname(file.originalname));
-//     }
-// });
-
-// module.exports = multer({ storage });
 import multer from "multer";
+import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
-// Pour résoudre __dirname avec ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Chemin du dossier avatars
+const avatarsDir = path.join(process.cwd(), "uploads/avatars");
 
+// Crée le dossier s'il n'existe pas
+if (!fs.existsSync(avatarsDir)) {
+  fs.mkdirSync(avatarsDir, { recursive: true });
+  console.log("Dossier uploads/avatars créé !");
+}
+
+// Multer storage
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../uploads/"));
+  destination: function (req, file, cb) {
+    cb(null, avatarsDir);
   },
-
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
 });
 
-export default multer({ storage });
+const upload = multer({ storage });
+
+export default upload;

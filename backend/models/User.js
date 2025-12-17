@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+
 const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -11,7 +12,7 @@ const UserSchema = new mongoose.Schema(
 
     avatar: {
       type: String,
-      default: "/uploads/default.png",
+      default: null,
     },
 
     resetToken: { type: String },
@@ -20,29 +21,6 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash du mot de passe avant sauvegarde
-UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-
-  try {
-    this.password = await bcrypt.hash(this.password, 10);
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ajouter par mouhamed ndiaye
-UserSchema.virtual("accounts", {
-  ref: "Account",
-  localField: "_id",
-  foreignField: "userId"
-});
-
-UserSchema.set("toObject", { virtuals: true });
-UserSchema.set("toJSON", { virtuals: true });
-
-// Comparer le mot de passe
 UserSchema.methods.comparePassword = async function (enteredPassword) {
   if (!enteredPassword || !this.password) return false;
   return await bcrypt.compare(enteredPassword, this.password);

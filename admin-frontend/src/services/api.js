@@ -1,21 +1,20 @@
-// api.js
-import axios from "axios";
+const BASE_URL = "http://localhost:5000/admin";
 
-const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
-});
+export const api = async (endpoint, method = "GET", token, body = null) => {
+  const res = await fetch(BASE_URL + endpoint, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: body ? JSON.stringify(body) : null,
+  });
 
-export const setToken = (token) => {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("API ERROR:", text);
+    throw new Error(text);
+  }
+
+  return res.json();
 };
-
-// USERS
-export const getUsers = () => api.get("/users");
-export const getUser = (id) => api.get(`/users/${id}`);
-export const updateUser = (id, data) => api.put(`/users/${id}`, data);
-export const deleteUser = (id) => api.delete(`/users/${id}`);
-
-// ACCOUNTS
-export const getAccounts = () => api.get("/accounts");  // <- ajoute ceci
-
-export default api;
