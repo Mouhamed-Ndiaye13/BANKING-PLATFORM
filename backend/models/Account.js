@@ -32,7 +32,10 @@ AccountSchema.pre("validate", async function(next){
     this.accountNumber = number;
   }
   next();
+  
 });
+
+
 
 //  Export du modèle en ESM
 const Account = mongoose.model("Account", AccountSchema);

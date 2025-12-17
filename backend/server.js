@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import session from "express-session";
 import configurePassport from "./config/passport.js";
+import adminRoutes from "./routes/admin.routes.js"; // ajouter par mouhamed ndiaye
 
 
 // Routes import
@@ -60,7 +61,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/accounts", accountRoutes);
 app.use("/api/transactions", transactionRoutes);
-app.use("/api/transfers", transferRoutes);
+app.use("/api/transfer", transferRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/settings", settingsRoutes); 
 app.use('/api/support', supportRoutes);
@@ -68,6 +69,8 @@ app.use('/api/categories', categoryRoutes);
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/payments", paymentRoutes); 
 app.use("/api/beneficiaires", beneficiaireRoutes);
+// ajouter par mouhamed ndiaye
+app.use("/admin", adminRoutes);
 // Test
 app.get("/test", (req, res) => {
   res.send("Test OK");

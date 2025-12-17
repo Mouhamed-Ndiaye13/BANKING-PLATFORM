@@ -1,18 +1,13 @@
 
 import { Router } from "express";
 import auth from "../middleware/auth.js";
-import {
-  getTransactions,
-  getTransactionById
-} from "../controllers/transactionController.js";
+import { getTransactions, getTransactionById, cancelTransaction } from "../controllers/transactionController.js";
 
 const router = Router();
 
-// GET all transactions
-router.get("/", auth, getTransactions);
-
-// GET one transaction by ID
-router.get("/:id", auth, getTransactionById);
+router.get("/", getTransactions);
+router.get("/:id", getTransactionById);
+router.patch("/:id/cancel", cancelTransaction);
 
 export default router;
 
