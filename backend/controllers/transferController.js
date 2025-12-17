@@ -1,6 +1,8 @@
 // controllers/transferController.js
 import Account from "../models/Account.js";
 import Transaction from "../models/Transaction.js";
+import { createNotification } from "./notificationControllers.js";
+
 
 // Transfert interne entre comptes de l'utilisateur
 export const internalTransfer = async (req, res) => {
@@ -56,6 +58,12 @@ export const internalTransfer = async (req, res) => {
 });
 
 
+    await createNotification(
+      userId,
+      "TRANSFER",
+      `Transfert interne de ${amt} FCFA effectué avec succès`
+    );
+
     res.json({ message: "Transfert interne réussi", transaction });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -98,8 +106,17 @@ export const externalTransfer = async (req, res) => {
  description: `Virement externe vers ${beneficiaryIban}`
 });
 
+    await createNotification(
+     userId,
+    "TRANSFER",
+    `Virement externe de ${amt} FCFA vers ${beneficiaryIban} effectué`
+   );
+
+
     res.json({ message: "Virement externe effectué", transaction });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+
+  
 };

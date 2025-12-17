@@ -1,13 +1,13 @@
-// models/Support.js
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const supportSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  subject: { type: String, required: true },
-  message: { type: String, required: true },
-  status: { type: String, enum: ['ouvert', 'fermé'], default: 'ouvert' }
-}, { timestamps: true });
+const notificationSchema = new mongoose.Schema(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    type: { type: String, enum: ["transaction", "virement", "payment"], required: true },
+    message: { type: String, required: true },
+    read: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
 
-// Export par défaut pour pouvoir l'importer avec `import Support from ...`
-const Support = mongoose.model('Support', supportSchema);
-export default Support;
+export default mongoose.model("Notification", notificationSchema);
