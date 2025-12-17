@@ -2,6 +2,7 @@
   "name": "banking-backend",
   "version": "1.0.0",
   "description": "Backend pour l'application bancaire React",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -11,14 +12,20 @@
   "author": "Mouhamed Ndiaye",
   "license": "MIT",
   "dependencies": {
+    "@adminjs/express": "^6.1.1",
+    "@adminjs/mongoose": "^4.1.0",
+    "adminjs": "^7.8.17",
+    "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "express": "^4.21.2",
+    "express": "^4.22.1",
     "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^7.8.7",
-    "nodemailer": "^6.9.0"
+    "mongoose": "^8.20.2",
+    "multer": "^2.0.2",
+    "nanoid": "^5.1.6",
+    "nodemailer": "^6.10.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"

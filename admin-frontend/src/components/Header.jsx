@@ -1,16 +1,16 @@
-import React from "react";
-import { Bars3Icon, BellIcon } from "@heroicons/react/24/outline";
+import { Bell } from "lucide-react";
+import { logout } from "../services/auth";
 
 export default function Header({ onMenuClick }) {
   return (
-    <header className="bg-white h-16 flex items-center justify-between px-6 border-b border-gray-100 shadow-sm">
+    <header className="bg-white shadow p-4 flex justify-between items-center">
+      <h2 className="font-semibold text-primary">Admin Panel</h2>
 
-      {/* Burger mobile */}
       <button
-        className="lg:hidden"
-        onClick={onMenuClick}
+        onClick={logout}
+        className="bg-primary text-white px-4 py-1 rounded hover:bg-secondary"
       >
-        <Bars3Icon className="w-7 h-7 text-gray-700" />
+        Logout
       </button>
 
       <h2 className="text-xl font-semibold text-gray-700 hidden lg:block">
@@ -18,10 +18,9 @@ export default function Header({ onMenuClick }) {
       </h2>
 
       <div className="flex items-center gap-5 ml-auto">
-
         {/* Notifications */}
         <button className="relative">
-          <BellIcon className="w-6 h-6 text-gray-600 hover:text-gray-800 transition" />
+          <Bell className="w-6 h-6 text-gray-600 hover:text-gray-800 transition" />
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
             2
           </span>

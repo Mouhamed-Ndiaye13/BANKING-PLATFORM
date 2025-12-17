@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { getAccounts, makePayment } from "../services/api";
+import React, { useEffect, useState } from 'react';
+import { api } from "../services/api";
 
 export default function Payements({ userId }) {
   const [accounts, setAccounts] = useState([]);
