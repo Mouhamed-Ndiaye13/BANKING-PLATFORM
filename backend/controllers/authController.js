@@ -1,36 +1,187 @@
-const User = require("../models/User");
-const jwt = require("jsonwebtoken");
+import User from "../models/User.js";
+import Account from "../models/Account.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";            
+import nodemailer from "nodemailer";
 
-exports.register = async (req, res) => {
-    try {
-        const user = await User.create(req.body);
-        res.status(201).json({ message: "User registered", user });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
+// ------------------- REGISTER -------------------
+export const register = async (req, res) => {
+  try {
+    const { prenom, name, email, password, telephone, dateDeNaissance} = req.body;
+
+    const exist = await User.findOne({ email });
+    if (exist) {
+      return res.status(400).json({ message: "Email déjà utilisé" });
     }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Création utilisateur
+    const user = await User.create({
+      prenom,
+      name,
+      email,
+      telephone,
+      dateDeNaissance,
+      password: hashedPassword,
+      role: "user"
+    });
+
+    //  Création AUTOMATIQUE des 3 comptes
+    const accounts = await Account.insertMany([
+      {
+        userId: user._id,
+        type: "courant",
+        name: "Compte courant",
+        balance: 0
+      },
+      {
+        userId: user._id,
+        type: "epargne",
+        name: "Compte épargne",
+        balance: 0
+      },
+      {
+        userId: user._id,
+        type: "business",
+        name: "Compte business",
+        balance: 0
+      }
+    ]);
+
+    res.status(201).json({
+      message: "Utilisateur créé avec ses comptes",
+      user,
+      accounts
+    });
+
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
 
-exports.login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
+// modifier par mouhamed ndiaye dans accountController
+// ---------- CREATE nouveau compte ----------
+export const createAccount = async (req, res) => {
+  return res.status(403).json({
+    message: "Les comptes sont créés automatiquement à l’inscription."
+  });
+};
 
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ error: "Invalid credentials" });
+// ------------------- LOGIN -------------------
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-        const isMatch = await user.comparePassword(password);
-        if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(400).json({ message: "Email incorrect" });
 
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-            expiresIn: "7d"
-        });
+    // Compare le mot de passe hashé
+    const match = await user.comparePassword(password);
+    if (!match)
+      return res.status(400).json({ message: "Mot de passe incorrect" });
 
-        res.json({
-            message: "Logged in",
-            token,
-            user
-        });
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    res.json({
+      message: "Connexion réussie",
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        prenom: user.prenom,
+        name: user.name
+      }
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// ------------------- FORGOT PASSWORD -------------------
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email requis" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
+
+    // Générer token sécurisé
+    const token = crypto.randomBytes(20).toString("hex");
+
+    user.resetToken = token;
+    user.resetTokenExpire = Date.now() + 3600000; // 1h
+    await user.save();
+
+    const resetURL = `http://localhost:5173/reset-password/${token}`;
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Réinitialisation du mot de passe",
+      html: `
+        <p>Vous avez demandé une réinitialisation de mot de passe.</p>
+        <p>Cliquez ici : <a href="${resetURL}">${resetURL}</a></p>
+        <p>Ce lien expire dans 1 heure.</p>
+      `
+    });
+
+    res.json({ message: "Email envoyé !" });
+
+  } catch (err) {
+    console.log("ERREUR : MOT DE PASSE OUBLIÉ :", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ------------------- RESET PASSWORD -------------------
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpire: { $gt: Date.now() }
+    });
+
+    if (!user)
+      return res.status(400).json({ message: "Lien invalide ou expiré" });
+
+    // Nouveau mot de passe hashé
+    user.password = await bcrypt.hash(password, 10);
+    user.resetToken = null;
+    user.resetTokenExpire = null;
+    await user.save();
+
+    res.json({ message: "Mot de passe réinitialisé !" });
+
+  } catch (err) {
+    console.log("ERREUR RÉINITIALISATION DU MOT DE PASSE :", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ------------------- GENERATE TOKEN (optionnel) -------------------
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  });
 };

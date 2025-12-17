@@ -1,11 +1,14 @@
-const express = require('express');
-const router = express.Router();
-const auth = require('../middleware/auth');
-const isAdmin = require('../middleware/isAdmin');
-const ctrl = require('../controllers/transactionController');
 
-router.get('/', auth, ctrl.list);
-router.get('/:id', auth, ctrl.get);
-router.post('/', auth, ctrl.create);
+import { Router } from "express";
+import auth from "../middleware/auth.js";
+import { getTransactions, getTransactionById, cancelTransaction } from "../controllers/transactionController.js";
 
-module.exports = router;
+const router = Router();
+
+router.get("/", auth, getTransactions);
+router.get("/:id", auth, getTransactionById);
+router.patch("/:id/cancel", auth, cancelTransaction);
+
+export default router;
+
+

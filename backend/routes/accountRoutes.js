@@ -1,13 +1,14 @@
-const express = require('express');
+
+import express from "express";
+import { getAccounts, getAccountById, createAccount, updateAccount,getBalance } from "../controllers/accountController.js";
+import auth from "../middleware/auth.js";
+
 const router = express.Router();
-const auth = require('../middleware/auth');
-const isAdmin = require('../middleware/isAdmin');
-const ctrl = require('../controllers/accountController');
 
-router.get('/', auth, ctrl.list);
-router.get('/:id', auth, ctrl.get);
-router.post('/', auth, isAdmin, ctrl.create);
-router.put('/:id', auth, isAdmin, ctrl.update);
-router.delete('/:id', auth, isAdmin, ctrl.remove);
+router.get("/", auth, getAccounts);
+router.get("/:id", auth, getAccountById);
+router.post("/", auth, createAccount);
+router.put("/:id", auth, updateAccount);
+router.get("/:accountId/balance", getBalance);
 
-module.exports = router;
+export default router;

@@ -1,10 +1,13 @@
-const express = require('express');
-const router = express.Router();
-const PaymentController = require('../controllers/paymentController');
+// routes/paymentRoutes.js
+import { Router } from "express";
+import { makePayment, getPayments } from "../controllers/paymentController.js";
 
-router.get('/', PaymentController.list);
-router.get('/:id', PaymentController.get);
-router.post('/pay', PaymentController.create); // <- route pour le mini front
-router.put('/:id', PaymentController.update);
+const router = Router();
 
-module.exports = router;
+// Endpoint pour effectuer un paiement
+router.post("/", makePayment);
+
+// Endpoint pour récupérer l'historique des paiements d'un compte
+router.get("/:accountId", getPayments);
+
+export default router;

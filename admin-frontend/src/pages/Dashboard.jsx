@@ -1,32 +1,79 @@
-import React, { useEffect, useState } from "react";
-import { getAccounts } from "../services/api";
+import { useEffect, useState } from "react";
+import Sidebar from "../components/Sidebar";
+import Header from "../components/Header";
+import { api } from "../services/api";
+import { getToken } from "../services/auth";
 
 export default function Dashboard() {
+  const [users, setUsers] = useState([]);
   const [accounts, setAccounts] = useState([]);
+  const [transactions, setTransactions] = useState([]);
 
   useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const res = await getAccounts();
-        setAccounts(res.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchAccounts();
+    fetchData();
   }, []);
 
+  const fetchData = async () => {
+    try {
+      const token = getToken();
+      setUsers(await api("/users", "GET", token));
+      setAccounts(await api("/accounts", "GET", token));
+      setTransactions(await api("/transactions", "GET", token));
+    } catch (err) {
+      console.error(err.message);
+    }
+  };
+
+  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+
   return (
-    <div className="ml-64 mt-20 p-6">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {accounts.map((acc) => (
-          <div key={acc._id} className="bg-white shadow rounded p-5">
-            <h3 className="text-lg font-semibold">{acc.type}</h3>
-            <p className="text-gray-600 mt-2">Solde : {acc.balance} €</p>
+    <div className="app">
+      <div className="content">
+
+        <div className="page">
+          {/* STATS */}
+          <div className="stats-grid">
+            <StatCard title="Utilisateurs" value={users.length} />
+            <StatCard title="Comptes" value={accounts.length} />
+            <StatCard title="Transactions" value={transactions.length} />
+            <StatCard title="Solde total" value={`${totalBalance.toLocaleString()} FCFA`} />
           </div>
-        ))}
+
+          {/* TABLE */}
+          <div className="table-card" style={{ marginTop: 25 }}>
+            <h3 style={{ marginBottom: 15 }}>Transactions récentes</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Montant</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.slice(0, 5).map(t => (
+                  <tr key={t._id}>
+                    <td>{new Date(t.createdAt).toLocaleDateString()}</td>
+                    <td>{t.amount} FCFA</td>
+                    <td>{t.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
       </div>
+    </div>
+  );
+}
+
+/* COMPONENT */
+function StatCard({ title, value }) {
+  return (
+    <div className="stat-card">
+      <p className="stat-title">{title}</p>
+      <h2 className="stat-value">{value}</h2>
     </div>
   );
 }

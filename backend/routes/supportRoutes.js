@@ -1,11 +1,17 @@
-const express = require('express');
-const router = express.Router();
-const auth = require('../middleware/auth');
-const ctrl = require('../controllers/supportController');
 
-router.get('/', auth, ctrl.list);
-router.get('/:id', auth, ctrl.get);
+import express from 'express';
+import auth from '../middleware/auth.js';
+import * as ctrl from '../controllers/supportController.js';
+
+const router = express.Router();
+
+// Utilisateur connecté
 router.post('/', auth, ctrl.create);
+router.get('/:id', auth, ctrl.get);
+
+// Admin
+router.get('/', auth, ctrl.list);
 router.put('/:id', auth, ctrl.update);
 
-module.exports = router;
+export default router;
+

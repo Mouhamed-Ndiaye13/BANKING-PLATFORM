@@ -1,34 +1,20 @@
-import axios from "axios";
+const BASE_URL = "http://localhost:5000/admin";
 
-const api = axios.create({
-  baseURL: "http://localhost:5000/api",
-});
+export const api = async (endpoint, method = "GET", token, body = null) => {
+  const res = await fetch(BASE_URL + endpoint, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: body ? JSON.stringify(body) : null,
+  });
 
-// TOKEN
-export const setToken = (token) => {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("API ERROR:", text);
+    throw new Error(text);
+  }
+
+  return res.json();
 };
-
-// USERS
-export const getUsers = () => api.get("/users");
-export const getUser = (id) => api.get(`/users/${id}`);
-export const updateUser = (id, data) => api.put(`/users/${id}`, data);
-export const deleteUser = (id) => api.delete(`/users/${id}`);
-
-// ACCOUNTS (ajout obligatoire pour ton Dashboard)
-// export const getAccounts = () => api.get("/accounts");
-
-// TRANSACTIONS (optionnel)
-export const getTransactions = () => api.get("/transactions");
-
-// PAYMENTS
-export const createPayment = (data) => api.post("/payments", data);
-export const getPayments = () => api.get("/payments");
-
-// Récupérer les comptes de l'utilisateur
-export const getAccounts = (userId) => axios.get(`http://localhost:5000/api/accounts?user=${userId}`);
-
-// Effectuer un paiement
-export const makePayment = (data) => axios.post("http://localhost:5000/api/payments/pay", data);
-
-export default api;

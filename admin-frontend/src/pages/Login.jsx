@@ -1,57 +1,71 @@
 // src/pages/Login.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login, setToken } from "../services/api";
+import { api } from "../services/api"; // doit pointer sur http://localhost:5000/admin
 
-export default function Login({ onLogin }) {
-  const navigate = useNavigate();
+export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
+
     try {
-      const res = await login(email, password);
-      const token = res.data.token;
-      localStorage.setItem("token", token);
-      setToken(token);
-      onLogin && onLogin();
-      navigate("/dashboard");
+      const data = await api("/login", "POST", "", { email, password });
+      // Stockage du token dans localStorage
+      localStorage.setItem("adminToken", data.token);
+      localStorage.setItem("adminEmail", data.email);
+
+      navigate("/"); // redirection vers Dashboard
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur connexion");
+      setError(err.message || "Erreur lors de la connexion");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: "60px auto" }}>
-      <div className="card" style={{ padding: 20 }}>
-        <h2>Connexion</h2>
-        {error && <div style={{ color: "red", marginBottom: 10 }}>{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-row" style={{ marginBottom: 10 }}>
+    <div className="min-h-screen flex items-center justify-center bg-[#a28870]">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 className="text-2xl font-bold mb-6 text-[#432703] text-center">
+          Connexion Admin
+        </h1>
+        {error && (
+          <div className="mb-4 text-red-600 font-semibold text-center">{error}</div>
+        )}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-[#432703] font-medium mb-1">Email</label>
             <input
               type="email"
-              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input"
               required
+              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#432703]"
             />
           </div>
-          <div className="form-row" style={{ marginBottom: 10 }}>
+          <div>
+            <label className="block text-[#432703] font-medium mb-1">Mot de passe</label>
             <input
               type="password"
-              placeholder="Mot de passe"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input"
               required
+              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#432703]"
             />
           </div>
-          <button type="submit" className="btn primary">
-            Se connecter
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#432703] text-white font-bold py-2 rounded hover:bg-[#3b2100] transition-colors"
+          >
+            {loading ? "Connexion..." : "Se connecter"}
           </button>
         </form>
       </div>
