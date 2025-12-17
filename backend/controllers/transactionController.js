@@ -2,47 +2,24 @@
 import Transaction from "../models/Transaction.js";
 import Account from "../models/Account.js";
 
-// ---------- GET toutes les transactions avec filtres ----------
+// ---------- GET toutes les transactions ----------
 export const getTransactions = async (req, res) => {
   try {
     const userId = req.user.id;
     const { type, startDate, endDate } = req.query;
 
-    // Filtrage dynamique
     let filters = { user: userId };
     if (type) filters.type = type;
     if (startDate) filters.date = { ...filters.date, $gte: new Date(startDate) };
     if (endDate) filters.date = { ...filters.date, $lte: new Date(endDate) };
 
     const transactions = await Transaction.find(filters)
-      .populate("sourceAccount")
-      .populate("destinationAccount")
+      .populate("user", "name prenom email")
+      .populate("sourceAccount", "accountNumber")          // <-- spécifier les champs
+      .populate("destinationAccount", "accountNumber")     // <-- spécifier les champs
       .sort({ createdAt: -1 });
 
-    // Début et fin du mois
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
-
-    const transactionsThisMonth = transactions.filter(
-      t => t.date >= startOfMonth && t.date <= endOfMonth
-    );
-
-    const revenueThisMonth = transactionsThisMonth
-      .filter(t => t.type === "depot" || t.type === "external_transfer")
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const expenseThisMonth = transactionsThisMonth
-      .filter(t => t.type === "retrait" || t.type === "internal_transfer")
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const totalTransactionsThisMonth = transactionsThisMonth.length;
-
-    res.json({
-      revenueThisMonth,
-      expenseThisMonth,
-      totalTransactionsThisMonth,
-      transactions
-    });
+    res.json({ transactions });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -51,19 +28,60 @@ export const getTransactions = async (req, res) => {
 // ---------- GET transaction par ID ----------
 export const getTransactionById = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const transaction = await Transaction.findById(req.params.id)
+      .populate("user", "name prenom email")
+      .populate("sourceAccount", "accountNumber")
+      .populate("destinationAccount", "accountNumber");
 
-    const transaction = await Transaction.findOne({
-      _id: req.params.id,
-      user: userId
-    })
+    if (!transaction)
+      return res.status(404).json({ message: "Transaction introuvable" });
+
+    res.json(transaction);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ---------- Annuler une transaction ----------
+export const cancelTransaction = async (req, res) => {
+  try {
+    const transaction = await Transaction.findById(req.params.id)
       .populate("sourceAccount")
       .populate("destinationAccount");
 
     if (!transaction) return res.status(404).json({ message: "Transaction introuvable" });
 
-    res.json(transaction);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    // Vérifier que ce n'est pas déjà annulé
+    if (transaction.cancelled) {
+      return res.status(400).json({ message: "Transaction déjà annulée" });
+    }
+
+    // Remettre l'argent sur le compte source
+    if (transaction.type === "depot") {
+      transaction.sourceAccount.balance -= transaction.amount;
+    } else if (transaction.type === "retrait") {
+      transaction.sourceAccount.balance += transaction.amount;
+    } else {
+      // internal_transfer ou external_transfer
+      if (transaction.destinationAccount) {
+        transaction.destinationAccount.balance -= transaction.amount;
+      }
+      if (transaction.sourceAccount) {
+        transaction.sourceAccount.balance += transaction.amount;
+      }
+      await transaction.destinationAccount.save();
+    }
+
+    await transaction.sourceAccount.save();
+
+    // Marquer la transaction comme annulée
+    transaction.cancelled = true;
+    await transaction.save();
+
+    res.status(200).json({ message: "Transaction annulée avec succès" });
+
+  } catch (err) {
+    console.error("Erreur cancelTransaction:", err);
+    res.status(500).json({ message: err.message });
   }
 };
