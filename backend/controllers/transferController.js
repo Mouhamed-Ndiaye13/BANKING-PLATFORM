@@ -37,14 +37,24 @@ export const internalTransfer = async (req, res) => {
     await dest.save();
 
     // Créer la transaction
-    const transaction = await Transaction.create({
-      user: userId,
-      type: "internal_transfer",
-      amount: amt,
-      sourceAccount,
-      destinationAccount,
-      description: "Transfert interne"
-    });
+    // const transaction = await Transaction.create({
+    //   user: userId,
+    //   type: "internal_transfer",
+    //   amount: amt,
+    //   sourceAccount,
+    //   destinationAccount,
+    //   description: "Transfert interne"
+    // });
+    await Transaction.create({
+  user: userId,
+  sourceAccount,
+  destinationAccount,
+  type: "internal_transfer",
+  direction: "debit",
+  amount: amt,
+  description: "Transfert interne"
+});
+
 
     res.json({ message: "Transfert interne réussi", transaction });
   } catch (error) {
@@ -78,12 +88,15 @@ export const externalTransfer = async (req, res) => {
     await source.save();
 
     const transaction = await Transaction.create({
-      user: userId,
-      type: "external_transfer",
-      amount: amt,
-      sourceAccount,
-      description: `Virement externe vers ${beneficiaryIban}`
-    });
+  user: userId,
+  sourceAccount,
+  type: "external_transfer",
+  direction: "debit",        
+  amount: amt,
+  category: "transfer",
+  beneficiaryIban,
+ description: `Virement externe vers ${beneficiaryIban}`
+});
 
     res.json({ message: "Virement externe effectué", transaction });
   } catch (error) {

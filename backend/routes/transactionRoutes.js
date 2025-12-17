@@ -1,4 +1,4 @@
-
+// routes/transactionRoutes.js
 import { Router } from "express";
 import auth from "../middleware/auth.js";
 import {
@@ -8,12 +8,7 @@ import {
 
 const router = Router();
 
-// GET all transactions
 router.get("/", auth, getTransactions);
-
-// GET one transaction by ID
 router.get("/:id", auth, getTransactionById);
 
 export default router;
-
-

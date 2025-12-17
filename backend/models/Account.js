@@ -11,14 +11,14 @@ const AccountSchema = new mongoose.Schema({
   accountNumber: { type: String, unique:true, required:true },
   currency: { type:String, default:"FCFA" },
   balance: { type:Number, default:0 },
-  history: [
-    {
-      type: { type: String, enum: ["payment","transfer","deposit","withdrawal"], required:true },
-      amount: Number,
-      service: String,
-      date: { type: Date, default: Date.now }
-    }
-  ]
+  // history: [
+  //   {
+  //     type: { type: String, enum: ["payment","transfer","deposit","withdrawal"], required:true },
+  //     amount: Number,
+  //     service: String,
+  //     date: { type: Date, default: Date.now }
+  //   }
+  // ]
 }, { timestamps:true });
 
 // Génération automatique du numéro de compte
