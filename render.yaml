@@ -1,5 +1,5 @@
 services:
-  - type: web
+  - type: web_service
     name: banking-backend
     env: node
     plan: free
@@ -9,3 +9,11 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: mongodb+srv://mouhamedNdiaye:Fessel_2025@banking-platform.srkvxx7.mongodb.net/
+        # Ajoute ta MongoDB URI ici via le dashboard Render
+        value: ""
+      - key: FE8C759E5E69ABBF5DEAE67D9783B
+        # Ajoute ton secret JWT ici via le dashboard Render
+        value: ""
+      - key: PORT
+        value: 5000
