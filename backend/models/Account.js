@@ -10,9 +10,18 @@ const AccountSchema = new mongoose.Schema({
   name: { type: String, required:true },
   accountNumber: { type: String, unique:true, required:true },
   currency: { type:String, default:"FCFA" },
-  balance: { type:Number, default:0 }
+  balance: { type:Number, default:0 },
+  history: [
+    {
+      type: { type: String, enum: ["payment","transfer","deposit","withdrawal"], required:true },
+      amount: Number,
+      service: String,
+      date: { type: Date, default: Date.now }
+    }
+  ]
 }, { timestamps:true });
 
+// Génération automatique du numéro de compte
 AccountSchema.pre("validate", async function(next){
   if(!this.accountNumber){
     let number, exists=true;
@@ -25,4 +34,6 @@ AccountSchema.pre("validate", async function(next){
   next();
 });
 
-export default mongoose.model("Account", AccountSchema);
+//  Export du modèle en ESM
+const Account = mongoose.model("Account", AccountSchema);
+export default Account;

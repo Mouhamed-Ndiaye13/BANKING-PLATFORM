@@ -1,5 +1,4 @@
-// mouhamed ndiaye a un peu modifier ici
-// middleware/auth.js
+/// middleware/auth.js
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
