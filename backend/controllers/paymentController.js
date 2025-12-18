@@ -2,7 +2,7 @@ import Card from "../models/Card.js"
 import Account from "../models/Account.js"
 import Transaction from "../models/Transaction.js"
 import bcrypt from "bcrypt"
-import { createNotification } from "../controllers/notificationControllers.js" 
+import { createNotification } from "./notificationController.js" 
 
 export const payCard = async (req, res) => {
   try {

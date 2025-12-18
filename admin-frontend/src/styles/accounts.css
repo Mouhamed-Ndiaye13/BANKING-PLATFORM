@@ -1,0 +1,45 @@
+/* accounts.css */
+
+.accounts-page {
+  padding: 20px;
+  background: #f8f5f2;
+  min-height: 100vh;
+}
+
+.accounts-page h2 {
+  color: #432703;
+  margin-bottom: 20px;
+}
+
+.accounts-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.accounts-table thead {
+  background: #432703;
+  color: #fff;
+}
+
+.accounts-table th,
+.accounts-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0d8cf;
+}
+
+.accounts-table tbody tr:hover {
+  background: #a28870;
+  color: #fff;
+}
+
+.accounts-table td {
+  color: #432703;
+}
+
+.accounts-table tbody tr:hover td {
+  color: #fff;
+}

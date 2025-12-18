@@ -1,7 +1,8 @@
 /// middleware/auth.js
 import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 
-export default function auth(req, res, next) {
+export default async function auth(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
@@ -12,9 +13,17 @@ export default function auth(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+
+    // 🔥 Récupérer l'utilisateur complet
+    const user = await User.findById(decoded.id).select("-password");
+
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    req.user = user; // ✅ user réel (name, email, avatar)
     next();
   } catch (err) {
-    res.status(401).json({ error: "Invalid token" });
+    return res.status(401).json({ error: "Invalid token" });
   }
 }
