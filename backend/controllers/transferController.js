@@ -1,7 +1,7 @@
 // controllers/transferController.js
 import Account from "../models/Account.js";
 import Transaction from "../models/Transaction.js";
-import { createNotification } from "./notificationController.js";
+import { createNotification } from "./notificationControllers.js";
 
 
 // Transfert interne entre comptes de l'utilisateur
