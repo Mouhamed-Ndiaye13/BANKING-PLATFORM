@@ -184,7 +184,7 @@ export const internalTransfer = async (req, res) => {
 
     res.json({
       message: "Transfert interne réussi",
-      transactions: [debitTransaction, creditTransaction]
+      transactions: [debitTransaction]
     });
 
   } catch (error) {
@@ -194,47 +194,100 @@ export const internalTransfer = async (req, res) => {
 };
 
 // ===================== TRANSFERT EXTERNE =====================
+// export const externalTransfer = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { sourceAccount, beneficiaryIban, amount } = req.body;
+//     const amt = Number(amount);
+
+//     const source = await Account.findById(sourceAccount);
+//     if (!source) return res.status(404).json({ message: "Compte introuvable" });
+
+//     if (source.userId.toString() !== userId) {
+//       return res.status(403).json({ message: "Non autorisé" });
+//     }
+
+//     if (source.balance < amt) {
+//       return res.status(400).json({ message: "Solde insuffisant" });
+//     }
+
+//     source.balance -= amt;
+//     await source.save();
+
+//     const transaction = await Transaction.create({
+//       user: userId,
+//       sourceAccount,
+//       type: "external_transfer",
+//       direction: "expense",
+//       amount: amt,
+//       category: "Transfert externe",
+//       beneficiaryIban,
+//       label: `Virement externe vers ${beneficiaryIban}`
+//     });
+
+//     // await createNotification(
+//     //   userId,
+//     //   "TRANSFER",
+//     //   `Virement externe de ${amt} FCFA vers ${beneficiaryIban} effectué`
+//     // );
+
+//     res.json({ message: "Virement externe effectué", transaction });
+
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 export const externalTransfer = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { sourceAccount, beneficiaryIban, amount } = req.body;
+    const { sourceAccount, destinationAccount, amount } = req.body;
     const amt = Number(amount);
 
+    if (!sourceAccount || !destinationAccount || !amt) {
+      return res.status(400).json({ message: "Champs manquants" });
+    }
+
+    if (sourceAccount === destinationAccount) {
+      return res.status(400).json({ message: "Les deux comptes doivent être différents" });
+    }
+
+    // 1️⃣ Vérifier compte source
     const source = await Account.findById(sourceAccount);
-    if (!source) return res.status(404).json({ message: "Compte introuvable" });
+    if (!source) return res.status(404).json({ message: "Compte source introuvable" });
+    if (source.userId.toString() !== userId) return res.status(403).json({ message: "Non autorisé" });
+    if (source.balance < amt) return res.status(400).json({ message: "Solde insuffisant" });
 
-    if (source.userId.toString() !== userId) {
-      return res.status(403).json({ message: "Non autorisé" });
-    }
+    // 2️⃣ Vérifier compte destinataire
+    const dest = await Account.findById(destinationAccount);
+    if (!dest) return res.status(404).json({ message: "Compte bénéficiaire introuvable" });
 
-    if (source.balance < amt) {
-      return res.status(400).json({ message: "Solde insuffisant" });
-    }
-
+    // 3️⃣ Mise à jour des soldes
     source.balance -= amt;
+    dest.balance += amt;
     await source.save();
+    await dest.save();
 
+    // 4️⃣ Créer la transaction
     const transaction = await Transaction.create({
       user: userId,
       sourceAccount,
+      destinationAccount,
       type: "external_transfer",
       direction: "expense",
       amount: amt,
       category: "Transfert externe",
-      beneficiaryIban,
-      label: `Virement externe vers ${beneficiaryIban}`
+      label: `Virement externe vers ${dest.name || "Bénéficiaire"}`
     });
 
-    // await createNotification(
-    //   userId,
-    //   "TRANSFER",
-    //   `Virement externe de ${amt} FCFA vers ${beneficiaryIban} effectué`
-    // );
-
-    res.json({ message: "Virement externe effectué", transaction });
+    res.json({
+      message: "Virement externe effectué avec succès",
+      transaction,
+      destBalance: dest.balance
+    });
 
   } catch (error) {
-    console.error(error);
+    console.error("Erreur virement externe :", error);
     res.status(500).json({ message: error.message });
   }
 };

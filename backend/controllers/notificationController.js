@@ -1,45 +1,5 @@
-<<<<<<< HEAD:backend/controllers/notificationControllers.js
-// import Notification from "../models/Notification.js";
 
-// // Récupérer toutes les notifications d'un utilisateur
-// export const getNotifications = async (req, res) => {
-//   try {
-//     const notifications = await Notification.find({ userId: req.user._id }).sort({ createdAt: -1 });
-//     res.json(notifications);
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-// // Créer notification (utilisé par paiement, virement, transaction)
-// export const createNotification = async ({ userId, type, message }) => {
-//   try {
-//     const notification = new Notification({ userId, type, message });
-//     await notification.save();
-//     return notification;
-//   } catch (err) {
-//     console.error("Notification error:", err.message);
-//   }
-// };
-
-
-// // Marquer comme lue
-// export const markAsRead = async (req, res) => {
-//   try {
-//     const notification = await Notification.findByIdAndUpdate(
-//       req.params.id,
-//       { read: true },
-//       { new: true }
-//     );
-//     res.json(notification);
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
 import Notification from "../models/Notification.js";
-=======
-import Notification from "../models/notification.js";
->>>>>>> 698d0077a1545ad5acad5a4cf8e0c1d204456a88:backend/controllers/notificationController.js
 
 /**
  * Récupérer toutes les notifications de l'utilisateur connecté
