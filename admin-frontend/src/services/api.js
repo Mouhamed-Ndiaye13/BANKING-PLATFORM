@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:5000/admin";
+const BASE_URL = "https://banking-backend-rtsx.onrender.com/admin";
 
 export const api = async (endpoint, method = "GET", token, body = null) => {
   const res = await fetch(BASE_URL + endpoint, {
