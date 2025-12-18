@@ -8,16 +8,16 @@
 // export const internalTransfer = async (req, res) => {
 //   try {
 //     const userId = req.user.id;
-//     const { sourceAccount, destinationAccount, amount } = req.body;
+//     const { sourceAccount, beneficiaryIban, amount } = req.body;
 
-//     if (sourceAccount === destinationAccount) {
+//     if (sourceAccount === beneficiaryIban) {
 //       return res.status(400).json({ message: "Les deux comptes doivent être différents" });
 //     }
 
 //     const amt = Number(amount);
 
 //     const source = await Account.findById(sourceAccount);
-//     const dest = await Account.findById(destinationAccount);
+//     const dest = await Account.findById(beneficiaryIban);
 
 //     if (!source || !dest) {
 //       return res.status(404).json({ message: "Compte introuvable" });
@@ -42,7 +42,7 @@
 //     const transaction = await Transaction.create({
 //   user: userId,
 //   sourceAccount,
-//   destinationAccount,
+//   beneficiaryIban,
 //   type: "income",
 //   direction: "debit",
 //   amount: amt,
@@ -124,15 +124,15 @@ import Transaction from "../models/Transaction.js";
 export const internalTransfer = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { sourceAccount, destinationAccount, amount } = req.body;
+    const { sourceAccount, beneficiaryIban, amount } = req.body;
     const amt = Number(amount);
 
-    if (sourceAccount === destinationAccount) {
+    if (sourceAccount === beneficiaryIban) {
       return res.status(400).json({ message: "Les deux comptes doivent être différents" });
     }
 
     const source = await Account.findById(sourceAccount);
-    const dest = await Account.findById(destinationAccount);
+    const dest = await Account.findById(beneficiaryIban);
 
     if (!source || !dest) {
       return res.status(404).json({ message: "Compte introuvable" });
@@ -156,7 +156,7 @@ export const internalTransfer = async (req, res) => {
     const debitTransaction = await Transaction.create({
       user: userId,
       sourceAccount,
-      destinationAccount,
+      beneficiaryIban,
       type: "internal_transfer",
       direction: "expense",
       amount: amt,
@@ -167,7 +167,7 @@ export const internalTransfer = async (req, res) => {
     // const creditTransaction = await Transaction.create({
     //   user: userId,
     //   sourceAccount,
-    //   destinationAccount,
+    //   beneficiaryIban,
     //   type: "internal_transfer",
     //   direction: "income",
     //   amount: amt,
@@ -241,38 +241,38 @@ export const internalTransfer = async (req, res) => {
 export const externalTransfer = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { sourceAccount, destinationAccount, amount } = req.body;
+    const { sourceAccount, beneficiaryIban, amount } = req.body;
     const amt = Number(amount);
 
-    if (!sourceAccount || !destinationAccount || !amt) {
+    if (!sourceAccount || !beneficiaryIban || !amt) {
       return res.status(400).json({ message: "Champs manquants" });
     }
 
-    if (sourceAccount === destinationAccount) {
+    if (sourceAccount === beneficiaryIban) {
       return res.status(400).json({ message: "Les deux comptes doivent être différents" });
     }
 
-    // 1️⃣ Vérifier compte source
+    //  Vérifier compte source
     const source = await Account.findById(sourceAccount);
     if (!source) return res.status(404).json({ message: "Compte source introuvable" });
     if (source.userId.toString() !== userId) return res.status(403).json({ message: "Non autorisé" });
     if (source.balance < amt) return res.status(400).json({ message: "Solde insuffisant" });
 
-    // 2️⃣ Vérifier compte destinataire
-    const dest = await Account.findById(destinationAccount);
-    if (!dest) return res.status(404).json({ message: "Compte bénéficiaire introuvable" });
+    //  Vérifier compte destinataire
+    const dest = await Account.findOne({ accountNumber: beneficiaryIban });
+if (!dest) return res.status(404).json({ message: "Compte bénéficiaire introuvable" });
 
-    // 3️⃣ Mise à jour des soldes
+    //  Mise à jour des soldes
     source.balance -= amt;
     dest.balance += amt;
     await source.save();
     await dest.save();
 
-    // 4️⃣ Créer la transaction
+    //  Créer la transaction
     const transaction = await Transaction.create({
       user: userId,
       sourceAccount,
-      destinationAccount,
+      beneficiaryIban,
       type: "external_transfer",
       direction: "expense",
       amount: amt,
