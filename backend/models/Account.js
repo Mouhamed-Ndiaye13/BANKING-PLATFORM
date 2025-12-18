@@ -28,11 +28,5 @@ AccountSchema.pre("validate", async function(next){
   
 });
 
-<<<<<<< HEAD
-=======
-
-
-//  Export du modèle en ESM
->>>>>>> 698d0077a1545ad5acad5a4cf8e0c1d204456a88
 const Account = mongoose.model("Account", AccountSchema);
 export default Account;
