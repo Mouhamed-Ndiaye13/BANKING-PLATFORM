@@ -15,13 +15,13 @@ const TransactionSchema = new mongoose.Schema({
 
   direction: {                 
     type: String,
-    enum: ["credit", "debit"],
+    enum: ["income", "expense"],
     required: true
   },
 
   amount: { type: Number, required: true },
 
-  category: { type: String, default: "transfer" },
+  category: { type: String},
 
   beneficiaryIban: { type: String },
 
@@ -35,5 +35,6 @@ const TransactionSchema = new mongoose.Schema({
 const Transaction =
   mongoose.models.Transaction ||
   mongoose.model("Transaction", TransactionSchema);
+
 
 export default Transaction;
