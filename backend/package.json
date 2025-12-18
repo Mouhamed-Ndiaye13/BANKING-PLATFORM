@@ -9,6 +9,9 @@
     "dev": "nodemon server.js",
     "seed": "node utils/seed.js"
   },
+  "engines": {
+    "node": "20.x"
+  },
   "author": "Mouhamed Ndiaye",
   "license": "MIT",
   "dependencies": {
@@ -25,7 +28,14 @@
     "mongoose": "^8.20.2",
     "multer": "^2.0.2",
     "nanoid": "^5.1.6",
-    "nodemailer": "^6.10.1"
+    "nodemailer": "^6.10.1",
+    "passport": "^0.7.0",
+    "passport-facebook": "^3.0.0",
+    "passport-github2": "^0.1.12",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-jwt": "^4.0.1",
+    "passport-local": "^1.0.0",
+    "passport-twitter": "^1.0.4"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
