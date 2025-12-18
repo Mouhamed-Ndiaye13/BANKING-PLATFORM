@@ -72,6 +72,14 @@ app.use('/api/categories', categoryRoutes);
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/payments", paymentRoutes); 
 
+//tester le lien du backend
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "Banking backend is running 🚀",
+  });
+});
+
 
 app.use("/api/notifications", notificationRoutes);
 
