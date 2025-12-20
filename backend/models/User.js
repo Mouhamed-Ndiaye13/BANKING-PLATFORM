@@ -15,6 +15,22 @@ const UserSchema = new mongoose.Schema(
       default: null,
     },
 
+ isVerified: {
+    type: Boolean,
+    default: false,
+  },
+
+  emailToken: String,
+  emailTokenExpires: Date,
+    
+    twoFactorEnabled: { type: Boolean, default: true },
+
+
+
+  email2FACode: String,           // hashé
+  email2FAExpires: Date,
+  email2FATries: { type: Number, default: 0 },
+
     resetToken: { type: String },
     resetTokenExpire: { type: Date },
   },

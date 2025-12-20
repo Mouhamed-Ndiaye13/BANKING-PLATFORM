@@ -19,7 +19,7 @@ import {
 const router = express.Router();
 
 // ajouter par mouhamed ndiaye
-// 🔥 ROUTE USER CONNECTÉ (IMPORTANT)
+//  ROUTE USER CONNECTÉ (IMPORTANT)
 router.get("/me", auth, (req, res) => {
   res.json({
     _id: req.user._id,

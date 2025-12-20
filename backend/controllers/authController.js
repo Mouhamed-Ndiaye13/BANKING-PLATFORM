@@ -1,10 +1,11 @@
 import User from "../models/User.js";
 import Account from "../models/Account.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";            
 import nodemailer from "nodemailer";
-
+import { generateEmailOTP } from "../utils/otp.js";
+import { generateToken } from "../utils/generateToken.js";
+import { transporter } from "../utils/mailer.js";
 // ------------------- REGISTER -------------------
 export const register = async (req, res) => {
   try {
@@ -16,7 +17,8 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
+     //  GÉNÉRATION DU TOKEN EMAIL (OBLIGATOIRE)
+    const emailToken = crypto.randomBytes(32).toString("hex");
     // Création utilisateur
     const user = await User.create({
       prenom,
@@ -25,7 +27,11 @@ export const register = async (req, res) => {
       telephone,
       dateDeNaissance,
       password: hashedPassword,
-      role: "user"
+      role: "user",
+      emailToken,
+      emailTokenExpires: Date.now() + 1000 * 60 * 60, // 1h
+      isEmailVerified: false,
+       twoFactorEnabled: true
     });
 
     //  Création AUTOMATIQUE des 3 comptes
@@ -50,24 +56,61 @@ export const register = async (req, res) => {
       }
     ]);
 
+        // Envoi email de confirmation
+    const verifyURL = `http://localhost:5173/verify-email/${emailToken}`;
+
+    await transporter.sendMail({
+      to: email,
+      subject: "Confirmation de votre compte",
+      html: `
+        <h3>Bienvenue ${name}</h3>
+        <p>Cliquez sur le lien ci-dessous pour activer votre compte :</p>
+        <a href="${verifyURL}">${verifyURL}</a>
+        <p>Ce lien expire dans 1 heure</p>
+      `
+    });
     res.status(201).json({
-      message: "Utilisateur créé avec ses comptes",
-      user,
-      accounts
+      message: "Compte créé. Vérifiez votre email."
     });
 
   } catch (err) {
     console.error("REGISTER ERROR:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
-// modifier par mouhamed ndiaye dans accountController
 // ---------- CREATE nouveau compte ----------
 export const createAccount = async (req, res) => {
   return res.status(403).json({
     message: "Les comptes sont créés automatiquement à l’inscription."
   });
+};
+/* ================= CONFIRM EMAIL ================= */
+export const confirmEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const user = await User.findOne({
+      emailToken: token,
+      emailTokenExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Lien invalide ou expiré" });
+    }
+
+    user.isEmailVerified = true;
+    user.emailToken = null;
+    user.emailTokenExpires = null;
+
+    await user.save();
+
+    res.json({ message: "Compte activé avec succès" });
+
+  } catch (error) {
+    console.error("CONFIRM EMAIL ERROR:", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
 };
 
 // ------------------- LOGIN -------------------
@@ -77,31 +120,96 @@ export const login = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user)
-      return res.status(400).json({ message: "Email incorrect" });
+      return res.status(401).json({ message: "Identifiants invalides" });
 
-    // Compare le mot de passe hashé
-    const match = await user.comparePassword(password);
-    if (!match)
-      return res.status(400).json({ message: "Mot de passe incorrect" });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(401).json({ message: "Identifiants invalides" });
 
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    // 2FA par email
+    if (user.twoFactorEnabled) {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
 
+      user.email2FACode = await bcrypt.hash(code, 10);
+      user.email2FAExpires = Date.now() + 5 * 60 * 1000;
+      user.email2FATries = 0;
+
+      await user.save();
+
+      await transporter.sendMail({
+        to: user.email,
+        subject: "Code de sécurité",
+        html: `
+          <h3>Code de connexion</h3>
+          <h1>${code}</h1>
+          <p>Expire dans 5 minutes</p>
+        `,
+      });
+
+      return res.json({
+        twoFactorRequired: true,
+        userId: user._id,
+      });
+    }
+
+    const token = generateToken(user._id);
+    res.json({ token });
+
+  } catch (error) {
+    console.error("LOGIN ERROR:", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// ------------------- VERIFY EMAIL 2FA -------------------
+export const verifyEmail2FA = async (req, res) => {
+  try {
+    const { userId, code } = req.body;
+
+    if (!userId || !code)
+      return res.status(400).json({ message: "Code et userId requis" });
+
+    const user = await User.findById(userId);
+    if (!user || !user.email2FACode)
+      return res.status(400).json({ message: "Code invalide" });
+
+    // Expiration
+    if (user.email2FAExpires < Date.now()) {
+      user.email2FACode = null;
+      user.email2FAExpires = null;
+      await user.save();
+      return res.status(401).json({ message: "Code expiré" });
+    }
+
+    // Limite tentatives
+    if (user.email2FATries >= 5) {
+      user.email2FACode = null;
+      user.email2FAExpires = null;
+      await user.save();
+      return res.status(429).json({ message: "Trop de tentatives" });
+    }
+
+    const isValid = await bcrypt.compare(code, user.email2FACode);
+    if (!isValid) {
+      user.email2FATries += 1;
+      await user.save();
+      return res.status(401).json({ message: "Code incorrect" });
+    }
+
+    // Succès
+    user.email2FACode = null;
+    user.email2FAExpires = null;
+    user.email2FATries = 0;
+    await user.save();
+
+    const token = generateToken(user._id);
     res.json({
-      message: "Connexion réussie",
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        prenom: user.prenom,
-        name: user.name
-      }
+      message: "2FA vérifié avec succès",
+      token
     });
-  } catch (err) {
-    console.log(err);
+
+  } catch (error) {
+    console.error("VERIFY 2FA ERROR:", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
@@ -179,9 +287,3 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-// ------------------- GENERATE TOKEN (optionnel) -------------------
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  });
-};
