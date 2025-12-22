@@ -5,7 +5,7 @@ import path from "path";
 const serviceAccountPath = path.join(
   process.cwd(),
   "service",
-  "bankrewmi-b087a-firebase-adminsdk-fbsvc-b6afae9a6b.json"
+  "banquerewmi-firebase-adminsdk-fbsvc-e157df0e06.json"
 );
 
 const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));

@@ -116,6 +116,7 @@ export const makePayment = async (req, res) => {
       `Paiement de ${amount} FCFA pour ${service} effectué avec succès`
     );
 
+
     res.json({
       message: "Paiement effectué avec succès",
       accountBalance: account.balance,

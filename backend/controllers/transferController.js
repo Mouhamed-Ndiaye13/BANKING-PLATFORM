@@ -48,11 +48,12 @@ export const internalTransfer = async (req, res) => {
       description: "Transfert interne"
     });
 
-    await createNotification(
-      userId,
-      "TRANSFER",
-      `Transfert interne de ${amt} FCFA effectué avec succès`
-    );
+  await createNotification(
+  userId,
+  "virement",
+  `Transfert interne de ${amt} FCFA effectué avec succès`
+);
+
 
     res.json({ message: "Transfert interne réussi", transaction });
   } catch (error) {
@@ -93,11 +94,12 @@ export const externalTransfer = async (req, res) => {
       description: `Virement externe vers ${beneficiaryIban}`
     });
 
-    await createNotification(
-     userId,
-    "TRANSFER",
-    `Virement externe de ${amt} FCFA vers ${beneficiaryIban} effectué`
-   );
+  await createNotification(
+  userId,
+  "virement",
+  `Virement externe de ${amt} FCFA vers ${beneficiaryIban} effectué`
+ );
+
 
 
     res.json({ message: "Virement externe effectué", transaction });
