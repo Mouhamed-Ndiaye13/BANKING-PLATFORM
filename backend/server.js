@@ -10,6 +10,7 @@ import adminRoutes from "./routes/admin.routes.js"; // ajouter par mouhamed ndia
 // Routes import
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import carteRoutes from "./routes/carteRoutes.js"
 import accountRoutes from "./routes/accountRoutes.js";
 import transactionRoutes from "./routes/transactionRoutes.js";
 import transferRoutes from "./routes/transferRoutes.js";
@@ -62,6 +63,7 @@ app.use(passportInstance.session());
 // Routes principales (EXISTANTES - NE PAS MODIFIER)
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/cards", carteRoutes);
 app.use("/api/accounts", accountRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/transfer", transferRoutes);
