@@ -26,6 +26,9 @@ export default function Sidebar() {
         <NavLink to="/users" className={linkClasses}>
           Users
         </NavLink>
+        <NavLink to="/accounts" className={linkClasses}>
+          Accounts
+        </NavLink>
         <NavLink to="/transactions" className={linkClasses}>
           Transactions
         </NavLink>
