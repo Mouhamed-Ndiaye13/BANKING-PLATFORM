@@ -18,9 +18,10 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import googleAuthRoutes from "./routes/googleAuthRoutes.js";
 import beneficiaireRoutes from "./routes/beneficiaireRoutes.js";
-
 // Firebase Admin
 import admin from "./config/firebaseAdmin.js";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger.js"
 
 dotenv.config();
 const app = express();
@@ -54,13 +55,12 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/beneficiaires", beneficiaireRoutes);
-
 // Google Auth routes
 app.use("/api/auth", googleAuthRoutes);
-
-
 // Test endpoint
 app.get("/", (req, res) => res.send("Backend Banque Rewmi"));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 
 // MongoDB connection
 mongoose
