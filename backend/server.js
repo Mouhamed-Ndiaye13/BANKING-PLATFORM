@@ -56,7 +56,8 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/beneficiaires", beneficiaireRoutes);
 
 // Google Auth routes
-app.use("/auth", googleAuthRoutes);
+app.use("/api/auth", googleAuthRoutes);
+
 
 // Test endpoint
 app.get("/", (req, res) => res.send("Backend Banque Rewmi"));
@@ -72,5 +73,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:3000"}`);
-  console.log(`Google Auth: ${process.env.GOOGLE_CLIENT_ID ? "Activé" : "Désactivé"}`);
+  console.log("Google Auth: Activé (Firebase)");
 });
