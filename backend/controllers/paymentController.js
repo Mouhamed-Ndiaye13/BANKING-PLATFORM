@@ -1,143 +1,203 @@
-import Card from "../models/Card.js"
-import Account from "../models/Account.js"
-import Transaction from "../models/Transaction.js"
-import bcrypt from "bcrypt"
-import { createNotification } from "./notificationController.js" 
+import bcrypt from "bcryptjs";
+import Account from "../models/Account.js";
+import Transaction from "../models/Transaction.js";
+import Card from "../models/Card.js";
+import { createNotification } from "./notificationController.js";
 
+/* =====================================================
+   UTILITAIRE : récupérer le compte courant par défaut
+===================================================== */
+const getDefaultCurrentAccount = async (userId) => {
+  // 1️⃣ Compte courant marqué par défaut
+  let account = await Account.findOne({
+    userId,
+    type: "courant",
+    isDefault: true
+  });
+
+  // 2️⃣ Fallback : premier compte courant
+  if (!account) {
+    account = await Account.findOne({
+      userId,
+      type: "courant"
+    }).sort({ createdAt: 1 });
+  }
+
+  return account;
+};
+
+/* =====================================================
+   PAIEMENT PAR CARTE (débite le compte courant)
+===================================================== */
 export const payCard = async (req, res) => {
   try {
-    const userId = req.user.id
-    const { cardId, amount, pin, merchant } = req.body
+    const userId = req.user.id;
+    const { cardId, amount, pin, merchant } = req.body;
 
-    if(!cardId || !amount || !pin) {
-      return res.status(400).json({ message: "Données manquantes" })
-    }
+    if (!cardId || !amount || !pin)
+      return res.status(400).json({ message: "Données manquantes" });
 
-    const card = await Card.findById(cardId)
-    if(!card) return res.status(404).json({ message: "Carte introuvable" })
+    if (amount <= 0)
+      return res.status(400).json({ message: "Montant invalide" });
 
-    if(card.userId.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Accès interdit" })
-    }
+    const card = await Card.findById(cardId);
+    if (!card)
+      return res.status(404).json({ message: "Carte introuvable" });
 
-    if(card.status !== "active") {
-      return res.status(400).json({ message: "Carte non active" })
-    }
+    if (card.userId.toString() !== userId)
+      return res.status(403).json({ message: "Accès interdit" });
 
-    const now = new Date()
-    const [mm, yy] = card.expiration.split("/")
-    const exp = new Date(`20${yy}-${mm}-01`)
-    if(now > exp) {
-      return res.status(400).json({ message: "Carte expirée" })
-    }
+    const isValidPin = await bcrypt.compare(pin, card.pinHash);
+    if (!isValidPin)
+      return res.status(400).json({ message: "PIN incorrect" });
 
-    const isValidPin = await bcrypt.compare(pin, card.pinHash)
-    if(!isValidPin) {
-      return res.status(400).json({ message: "PIN incorrect" })
-    }
+    // ✅ Compte courant par défaut
+    const account = await getDefaultCurrentAccount(userId);
+    if (!account)
+      return res.status(404).json({ message: "Compte courant introuvable" });
 
-    const today = new Date()
-    today.setHours(0,0,0,0)
+    if (account.balance < amount)
+      return res.status(400).json({ message: "Solde insuffisant" });
 
-    const todaySpent = await Transaction.aggregate([
-      { $match: { cardId: card._id, createdAt: { $gte: today } } },
-      { $group: { _id: null, total: { $sum: "$amount" } } }
-    ])
+    //  Débit
+    account.balance -= amount;
+    await account.save();
 
-    let spent = todaySpent[0]?.total || 0
-    if(spent + amount > card.limitQuoti) {
-      return res.status(400).json({ message: "Limite journalière atteinte" })
-    }
-
-    const account = await Account.findById(card.accountId)
-    if(account.balance < amount) {
-      return res.status(400).json({ message: "Solde insuffisant" })
-    }
-
-    account.balance -= amount
-    await account.save()
-
+    // Transaction
     await Transaction.create({
-      userId,
-      cardId,
-      accountId: card.accountId,
+      user: userId,
+      sourceAccount: account._id,
+      type: "card_payment",
+      direction: "expense",
       amount,
       merchant,
-      type: "card-payment"
-    })
+      cardId,
+      category: "card",
+      label: `Paiement carte chez ${merchant}`
+    });
 
-    //  Notification ajoutée pour paiement carte
+    //  Notification
     await createNotification(
       userId,
       "CARD_PAYMENT",
-      `Paiement de ${amount} FCFA via la carte ${cardId} effectué pour ${merchant}`
-    );
-
-    return res.status(200).json({
-      message: "Paiement effectué",
-      amount,
-      merchant
-    })
-
-  } catch(err) {
-    console.error("Erreur paiement carte", err)
-    res.status(500).json({ message: "Erreur serveur" })
-  }
-}
-
-// Faire un paiement
-export const makePayment = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { accountId, amount, service } = req.body;
-
-    const account = await Account.findById(accountId);
-    if (!account) return res.status(404).json({ error: "Compte introuvable" });
-
-    if (account.balance < amount)
-      return res.status(400).json({ error: "Solde insuffisant" });
-
-    account.balance -= amount;
-
-    if (!account.history) account.history = [];
-    account.history.push({
-      type: "payment",
-      amount,
-      service,
-      date: new Date()
-    });
-
-    await account.save();
-
-    // Notification ajoutée pour paiement
-    await createNotification(
-      userId,
-      "PAYMENT",
-      `Paiement de ${amount} FCFA pour ${service} effectué avec succès`
+      `Paiement de ${amount} FCFA chez ${merchant}`
     );
 
     res.json({
-      message: "Paiement effectué avec succès",
-      accountBalance: account.balance,
-      history: account.history
+      message: "Paiement carte réussi",
+      balance: account.balance
     });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("PAY CARD ERROR:", err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
-// Récupérer l'historique des paiements
+/* =====================================================
+   PAIEMENT SERVICE (factures, abonnements, etc.)
+===================================================== */
+export const makePayment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { amount, service } = req.body;
+
+    if (!amount || amount <= 0)
+      return res.status(400).json({ message: "Montant invalide" });
+
+    if (!service)
+      return res.status(400).json({ message: "Service requis" });
+
+    const account = await getDefaultCurrentAccount(userId);
+    if (!account)
+      return res.status(404).json({ message: "Compte courant introuvable" });
+
+    if (account.balance < amount)
+      return res.status(400).json({ message: "Solde insuffisant" });
+
+    //  Débit
+    account.balance -= amount;
+    await account.save();
+
+    // Transaction
+    await Transaction.create({
+      user: userId,
+      sourceAccount: account._id,
+      type: "payment",
+      direction: "expense",
+      amount,
+      category: service,
+      label: `Paiement ${service}`
+    });
+
+    res.json({
+      message: "Paiement effectué avec succès",
+      balance: account.balance
+    });
+
+  } catch (err) {
+    console.error("MAKE PAYMENT ERROR:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+/* =====================================================
+   HISTORIQUE DES PAIEMENTS (carte + services)
+===================================================== */
 export const getPayments = async (req, res) => {
   try {
-    const { accountId } = req.params;
+    const userId = req.user.id;
 
-    const account = await Account.findById(accountId);
-    if (!account) return res.status(404).json({ error: "Compte introuvable" });
+    // Pagination params
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
 
-    const payments = account.history.filter(h => h.type === "payment");
+    const account = await getDefaultCurrentAccount(userId);
+    if (!account) {
+      return res.status(404).json({ message: "Compte courant introuvable" });
+    }
 
-    res.json(payments);
+    const filter = {
+      user: userId,
+      sourceAccount: account._id,
+      type: { $in: ["payment", "card_payment"] },
+    };
+
+    // Total pour pagination
+    const totalPayments = await Transaction.countDocuments(filter);
+
+    // Paiements paginés
+    const payments = await Transaction.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.json({
+      payments,
+      currentPage: page,
+      totalPages: Math.ceil(totalPayments / limit),
+      totalPayments,
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("GET PAYMENTS ERROR:", err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

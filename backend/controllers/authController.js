@@ -173,7 +173,7 @@ export const verifyEmail2FA = async (req, res) => {
     if (!user || !user.email2FACode)
       return res.status(400).json({ message: "Code invalide" });
 
-    // Expiration
+    // Vérifie l'expiration
     if (user.email2FAExpires < Date.now()) {
       user.email2FACode = null;
       user.email2FAExpires = null;
@@ -181,27 +181,18 @@ export const verifyEmail2FA = async (req, res) => {
       return res.status(401).json({ message: "Code expiré" });
     }
 
-    // Limite tentatives
-    if (user.email2FATries >= 5) {
-      user.email2FACode = null;
-      user.email2FAExpires = null;
-      await user.save();
-      return res.status(429).json({ message: "Trop de tentatives" });
-    }
-
+    // Vérifie le code
     const isValid = await bcrypt.compare(code, user.email2FACode);
     if (!isValid) {
-      user.email2FATries += 1;
-      await user.save();
       return res.status(401).json({ message: "Code incorrect" });
     }
 
-    // Succès
+    // Succès : réinitialise le code
     user.email2FACode = null;
     user.email2FAExpires = null;
-    user.email2FATries = 0;
     await user.save();
 
+    // Génère le token JWT
     const token = generateToken(user._id);
     res.json({
       message: "2FA vérifié avec succès",
@@ -213,6 +204,7 @@ export const verifyEmail2FA = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 // ------------------- FORGOT PASSWORD -------------------
 export const forgotPassword = async (req, res) => {

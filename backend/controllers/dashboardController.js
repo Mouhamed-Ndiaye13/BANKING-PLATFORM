@@ -166,6 +166,21 @@ export const getDashboardSummary = async (req, res) => {
       expenseCategories,
       transactions
     });
+    const income = await Transaction.aggregate([
+  {
+    $match: {
+      user: req.user.id,
+      direction: "income"
+    }
+  },
+  {
+    $group: {
+      _id: null,
+      total: { $sum: "$amount" }
+    }
+  }
+]);
+
 
   } catch (error) {
     console.error(error);
