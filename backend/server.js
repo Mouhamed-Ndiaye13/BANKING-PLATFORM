@@ -12,37 +12,61 @@ import transactionRoutes from "./routes/transactionRoutes.js";
 import transferRoutes from "./routes/transferRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js"; 
-import supportRoutes from './routes/supportRoutes.js';
-import categoryRoutes from './routes/categoryRoutes.js';
+import supportRoutes from "./routes/supportRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js"; 
 import notificationRoutes from "./routes/notificationRoutes.js";
 import googleAuthRoutes from "./routes/googleAuthRoutes.js";
 import beneficiaireRoutes from "./routes/beneficiaireRoutes.js";
+
 // Firebase Admin
 import admin from "./config/firebaseAdmin.js";
+
+// Swagger
 import swaggerUi from "swagger-ui-express";
-import { swaggerSpec } from "./config/swagger.js"
+import { swaggerSpec } from "./config/swagger.js";
 
 dotenv.config();
 const app = express();
 
-// CORS
-const allowedOrigins = process.env.FRONTEND_URLS?.split(",") || [];
+
+  //  CORS (CORRIGÉ – SANS TOUCHER AU RESTE DU CODE)
+const allowedOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS.split(",")
+  : [];
+
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Autorise Postman, mobile, etc.
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// Body parser
+// IMPORTANT : gestion du preflight (OPTIONS)
+app.options("*", cors());
+
+  // BODY PARSER
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static uploads
+
+  //  STATIC FILES
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-// Routes principales
+
+  //  ROUTES PRINCIPALES
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/accounts", accountRoutes);
@@ -55,23 +79,27 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/beneficiaires", beneficiaireRoutes);
+
 // Google Auth routes
 app.use("/api/auth", googleAuthRoutes);
-// Test endpoint
+
+
+  //  TEST & SWAGGER
 app.get("/", (req, res) => res.send("Backend Banque Rewmi"));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+ //  MONGODB
 
-// MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connecté"))
   .catch((err) => console.error("Erreur MongoDB :", err));
 
-// Start serveur
+
+  //  START SERVER
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
-  console.log(`Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:3000"}`);
+  console.log(`Allowed Frontend URLs: ${allowedOrigins.join(", ")}`);
   console.log("Google Auth: Activé (Firebase)");
 });
