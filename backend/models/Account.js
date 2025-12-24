@@ -11,6 +11,11 @@ const AccountSchema = new mongoose.Schema({
   accountNumber: { type: String, unique:true, required:true },
   currency: { type:String, default:"FCFA" },
   balance: { type:Number, default:0 },
+  //  COMPTE PAR DÉFAUT
+  isDefault: {
+    type: Boolean,
+    default: false
+  },
  
 }, { timestamps:true });
 

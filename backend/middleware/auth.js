@@ -14,14 +14,15 @@ export default async function auth(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 🔥 Récupérer l'utilisateur complet
+    //  Récupérer l'utilisateur complet
     const user = await User.findById(decoded.id).select("-password");
 
     if (!user) {
       return res.status(401).json({ error: "User not found" });
     }
 
-    req.user = user; // ✅ user réel (name, email, avatar)
+    req.user = { id: user._id };
+ //  user réel (name, email, avatar)
     next();
   } catch (err) {
     return res.status(401).json({ error: "Invalid token" });

@@ -1,12 +1,16 @@
-import { Router } from "express";
-import { getBeneficiaires, addBeneficiaire } from "../controllers/beneficiaireController.js";
+import express from "express";
+import { getBeneficiaires, addBeneficiaire} from "../controllers/beneficiaireController.js";
+import auth from "../middleware/auth.js";
 
-const router = Router();
+const router = express.Router();
 
-// GET /api/beneficiaires/:accountId
-router.get("/:accountId", getBeneficiaires);
+// ---------------- ROUTES BÉNÉFICIAIRES ----------------
+
+// GET /api/beneficiaires
+router.get("/", auth, getBeneficiaires);
 
 // POST /api/beneficiaires
-router.post("/", addBeneficiaire);
+router.post("/", auth, addBeneficiaire);
+
 
 export default router;
