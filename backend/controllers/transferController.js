@@ -140,6 +140,7 @@ import mongoose from "mongoose";
 
 
 
+import { createNotification } from "./notificationControllers.js";
 
 
 export const internalTransfer = async (req, res) => {
@@ -211,6 +212,12 @@ export const internalTransfer = async (req, res) => {
 
     await session.commitTransaction();
     session.endSession();
+  //Crée la notification juste après la transaction
+    await createNotification(
+  req.user.id,
+  "transaction",
+  `Vous avez transféré ${amount} vers le compte ${destinationAccount}.`
+    );
 
     res.json({
       message: "Transfert interne réussi",
@@ -320,6 +327,17 @@ export const externalTransfer = async (req, res) => {
       message: "Virement externe effectué avec succès",
       transactions
     });
+
+
+await createNotification(
+  req.user.id,
+  "virement",
+   `Virement externe de ${amt} FCFA vers ${beneficiaryIban} effectué`
+);
+
+
+
+    res.json({ message: "Virement externe effectué", transaction });
 
   } catch (error) {
     await session.abortTransaction();
