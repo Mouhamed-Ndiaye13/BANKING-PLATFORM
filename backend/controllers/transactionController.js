@@ -203,4 +203,47 @@ export const cancelTransaction = async (req, res) => {
     console.error("Erreur cancelTransaction:", err);
     res.status(500).json({ message: err.message });
   }
+
+
+
+
+
+
+  
 };
+
+
+// Création d'une transaction interne avec notification
+// export const internalTransfer = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { sourceAccount, destinationAccount, amount } = req.body;
+
+//     if (sourceAccount === destinationAccount)
+//       return res.status(400).json({ message: "Impossible de transférer vers le même compte." });
+
+//     //  Crée la transaction
+//     const transaction = await Transaction.create({
+//       user: userId,
+//       sourceAccount,
+//       destinationAccount,
+//       amount,
+//       type: "internal_transfer",
+//       date: new Date()
+//     });
+
+//     //  Crée la notification juste après la transaction
+//     await createNotification(
+//   userId,
+//   "transaction",
+//   `Vous avez transféré ${amount} vers le compte ${destinationAccount}.`
+//     );
+
+
+//     res.status(201).json(transaction);
+
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+

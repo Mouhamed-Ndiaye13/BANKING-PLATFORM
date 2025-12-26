@@ -77,11 +77,13 @@ export const payCard = async (req, res) => {
     });
 
     //  Notification
-    await createNotification(
-      userId,
-      "CARD_PAYMENT",
-      `Paiement de ${amount} FCFA chez ${merchant}`
-    );
+  await createNotification(
+  req.user.id,
+  "paiement",
+  "Paiement effectué avec succès"
+);
+
+
 
     res.json({
       message: "Paiement carte réussi",
@@ -134,6 +136,7 @@ export const makePayment = async (req, res) => {
       message: "Paiement effectué avec succès",
       balance: account.balance
     });
+    
 
   } catch (err) {
     console.error("MAKE PAYMENT ERROR:", err);

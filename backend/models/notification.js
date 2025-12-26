@@ -7,19 +7,15 @@ const notificationSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
     type: {
       type: String,
-      enum: ["TRANSACTION", "VIREMENT", "PAYMENT", "TRANSFER"],
+      enum: ["transaction", "virement", "paiement"],
       required: true,
     },
-
     message: {
       type: String,
       required: true,
-      trim: true,
     },
-
     read: {
       type: Boolean,
       default: false,
@@ -28,4 +24,9 @@ const notificationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Notification", notificationSchema);
+// Protection contre OverwriteModelError
+const Notification =
+  mongoose.models.Notification ||
+  mongoose.model("Notification", notificationSchema);
+
+export default Notification;
