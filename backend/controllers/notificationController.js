@@ -1,62 +1,36 @@
+import Notification from "../models/notification.js";
 
-import Notification from "../models/Notification.js";
-
-/**
- * Récupérer toutes les notifications de l'utilisateur connecté
- */
+// Récupérer toutes les notifications d'un utilisateur
 export const getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({
-      userId: req.user._id,
-    }).sort({ createdAt: -1 });
-
-    res.status(200).json(notifications);
-  } catch (error) {
-    res.status(500).json({ message: "Erreur récupération notifications" });
+    const notifications = await Notification.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-/**
- * Créer une notification (utilisée par transfert, paiement, etc.)
- *  Fonction interne (PAS une route)
- */
-export const createNotification = async ({ userId, type, message }) => {
+// Créer notification (utilisé par paiement, virement, transaction)
+export const createNotification = async (userId, type, message) => {
   try {
-    if (!userId || !type || !message) {
-      throw new Error("Paramètres notification manquants");
-    }
-
-    const notification = new Notification({
-      userId,
-      type,
-      message,
-    });
-
+    const notification = new Notification({ userId, type, message });
     await notification.save();
     return notification;
-  } catch (error) {
-    console.error(" Notification error:", error.message);
-    throw error;
+  } catch (err) {
+    console.error(err);
   }
 };
 
-/**
- * Marquer une notification comme lue
- */
+// Marquer comme lue
 export const markAsRead = async (req, res) => {
   try {
-    const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
+    const notification = await Notification.findByIdAndUpdate(
+      req.params.id,
       { read: true },
       { new: true }
     );
-
-    if (!notification) {
-      return res.status(404).json({ message: "Notification introuvable" });
-    }
-
-    res.status(200).json(notification);
-  } catch (error) {
-    res.status(500).json({ message: "Erreur mise à jour notification" });
+    res.json(notification);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-};
+}

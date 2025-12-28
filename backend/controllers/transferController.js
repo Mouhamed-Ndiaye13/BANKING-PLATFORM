@@ -1,9 +1,10 @@
 
-import Account from "../models/Account.js";
-import Transaction from "../models/Transaction.js";
-import mongoose from "mongoose";
+// import Account from "../models/Account.js";
+// import Transaction from "../models/Transaction.js";
+// import mongoose from "mongoose";
+// import { createNotification } from "./notificationControllers.js";
 
-// ===================== TRANSFERT INTERNE =====================
+// // ===================== TRANSFERT INTERNE =====================
 // export const internalTransfer = async (req, res) => {
 //   const session = await mongoose.startSession();
 //   session.startTransaction();
@@ -13,28 +14,31 @@ import mongoose from "mongoose";
 //     const { sourceAccount, destinationAccount, amount, description } = req.body;
 //     const amt = Number(amount);
 
-//     if (!sourceAccount || !destinationAccount || amt <= 0) {
+//     if (!sourceAccount || !destinationAccount || !amt || amt <= 0) {
 //       return res.status(400).json({ message: "Champs invalides" });
 //     }
 //     if (sourceAccount === destinationAccount) {
-//       return res.status(400).json({ message: "Les deux comptes doivent être différents" });
+//       return res.status(400).json({ message: "Les comptes doivent être différents" });
 //     }
 
-//     const source = await Account.findById(sourceAccount).session(session);
-//     const dest = await Account.findById(destinationAccount).session(session);
+//     // Compte source
+//     const source = await Account.findOne({ _id: sourceAccount, userId }).session(session);
+//     if (!source) return res.status(403).json({ message: "Compte source introuvable" });
 
-//     if (!source || !dest) return res.status(404).json({ message: "Compte introuvable" });
-//     if (source.userId.toString() !== userId)
-//       return res.status(403).json({ message: "Vous n'êtes pas propriétaire du compte source" });
+//     // Compte destination (même utilisateur)
+//     const dest = await Account.findOne({ _id: destinationAccount, userId }).session(session);
+//     if (!dest) return res.status(404).json({ message: "Compte destination introuvable" });
+
 //     if (source.balance < amt) return res.status(400).json({ message: "Solde insuffisant" });
 
 //     // Mise à jour des soldes
 //     source.balance -= amt;
 //     dest.balance += amt;
+
 //     await source.save({ session });
 //     await dest.save({ session });
 
-//     // Création des transactions avec ordered: true
+//     // Transactions
 //     const transactions = await Transaction.create(
 //       [
 //         {
@@ -48,7 +52,7 @@ import mongoose from "mongoose";
 //           label: description || "Transfert interne (débit)"
 //         },
 //         {
-//           user: dest.userId,
+//           user: userId,
 //           sourceAccount: source._id,
 //           destinationAccount: dest._id,
 //           type: "internal_transfer",
@@ -58,24 +62,29 @@ import mongoose from "mongoose";
 //           label: description || "Transfert interne (crédit)"
 //         }
 //       ],
-//       { session, ordered: true } 
+//       { session, ordered: true }
 //     );
 
 //     await session.commitTransaction();
 //     session.endSession();
 
-//     res.json({
-//       message: "Transfert interne réussi",
-//       transactions
-//     });
+    
+//   await createNotification(
+//   userId,
+//   "virement",
+//   `Transfert interne de ${amt} FCFA effectué avec succès`
+// );
+//     res.json({ message: "Transfert interne réussi", transactions });
+
 //   } catch (error) {
 //     await session.abortTransaction();
 //     session.endSession();
 //     console.error("Erreur transfert interne :", error);
-//     res.status(500).json({ message: error.message });
+//     res.status(500).json({ message: "Erreur serveur" });
 //   }
 // };
 
+// // ===================== TRANSFERT EXTERNE =====================
 // export const externalTransfer = async (req, res) => {
 //   const session = await mongoose.startSession();
 //   session.startTransaction();
@@ -85,27 +94,33 @@ import mongoose from "mongoose";
 //     const { sourceAccount, beneficiaryIban, amount, description } = req.body;
 //     const amt = Number(amount);
 
-//     if (!sourceAccount || !beneficiaryIban || amt <= 0) {
+//     if (!sourceAccount || !beneficiaryIban || !amt || amt <= 0) {
 //       return res.status(400).json({ message: "Champs invalides" });
 //     }
 
-//     const source = await Account.findById(sourceAccount).session(session);
-//     if (!source) return res.status(404).json({ message: "Compte source introuvable" });
-//     if (source.userId.toString() !== userId)
-//       return res.status(403).json({ message: "Non autorisé" });
+//     // Compte source
+//     const source = await Account.findOne({ _id: sourceAccount, userId }).session(session);
+//     if (!source) return res.status(403).json({ message: "Compte source introuvable" });
+
 //     if (source.balance < amt) return res.status(400).json({ message: "Solde insuffisant" });
 
+//     // Compte bénéficiaire externe
 //     const dest = await Account.findOne({ accountNumber: beneficiaryIban }).session(session);
 //     if (!dest) return res.status(404).json({ message: "Compte bénéficiaire introuvable" });
+
+//     if (dest._id.toString() === source._id.toString()) {
+//       return res.status(400).json({ message: "Impossible de virer vers le même compte" });
+//     }
 
 //     // Mise à jour des soldes
 //     source.balance -= amt;
 //     dest.balance += amt;
+
 //     await source.save({ session });
 //     await dest.save({ session });
 
-//     // Création de la transaction avec ordered: true
-//     const transaction = await Transaction.create(
+//     // Transactions
+//     const transactions = await Transaction.create(
 //       [
 //         {
 //           user: userId,
@@ -115,34 +130,49 @@ import mongoose from "mongoose";
 //           direction: "expense",
 //           amount: amt,
 //           category: "Transfert externe",
-//          label: description || `Virement externe vers ${dest.name || "Bénéficiaire"}`
-// }
-        
+//           label: description || `Virement externe vers ${beneficiaryIban}`
+//         },
+//         {
+//           user: dest.userId, // bénéficiaire
+//           sourceAccount: source._id,
+//           destinationAccount: dest._id,
+//           type: "external_transfer",
+//           direction: "income",
+//           amount: amt,
+//           category: "Transfert externe",
+//           label: description || `Virement externe reçu de ${source.name || "Expéditeur"}`
+//         }
 //       ],
-//       { session, ordered: true } //  important
+//       { session, ordered: true }
 //     );
 
 //     await session.commitTransaction();
 //     session.endSession();
 
-//     res.json({
-//       message: "Virement externe effectué avec succès",
-//       transaction: transaction[0],
-//       destBalance: dest.balance
-//     });
+//     // Notification expéditeur
+//       await createNotification(
+//   userId,
+//   "virement",
+//   `Virement externe de ${amt} FCFA vers ${beneficiaryIban} effectué`
+//  );
+
+//     res.json({ message: "Virement externe effectué avec succès", transactions });
+
 //   } catch (error) {
 //     await session.abortTransaction();
 //     session.endSession();
 //     console.error("Erreur virement externe :", error);
-//     res.status(500).json({ message: error.message });
+//     res.status(500).json({ message: "Erreur serveur" });
 //   }
-// }
-
-
-
+// };
+import Account from "../models/Account.js";
+import Transaction from "../models/Transaction.js";
+import mongoose from "mongoose";
 import { createNotification } from "./notificationControllers.js";
 
-
+/* =====================================================
+   TRANSFERT INTERNE
+===================================================== */
 export const internalTransfer = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -152,38 +182,31 @@ export const internalTransfer = async (req, res) => {
     const { sourceAccount, destinationAccount, amount, description } = req.body;
     const amt = Number(amount);
 
-    if (!sourceAccount || !destinationAccount || amt <= 0) {
+    if (!sourceAccount || !destinationAccount || !amt || amt <= 0) {
       return res.status(400).json({ message: "Champs invalides" });
     }
 
     if (sourceAccount === destinationAccount) {
-      return res.status(400).json({ message: "Les deux comptes doivent être différents" });
+      return res.status(400).json({ message: "Les comptes doivent être différents" });
     }
 
-    // Compte source (appartient à l'utilisateur)
     const source = await Account.findOne({ _id: sourceAccount, userId }).session(session);
-    if (!source) {
-      return res.status(403).json({ message: "Compte source introuvable ou accès interdit" });
-    }
+    if (!source) return res.status(403).json({ message: "Compte source introuvable" });
 
-    //  Compte destination (interne = même utilisateur)
     const dest = await Account.findOne({ _id: destinationAccount, userId }).session(session);
-    if (!dest) {
-      return res.status(404).json({ message: "Compte destination introuvable" });
-    }
+    if (!dest) return res.status(404).json({ message: "Compte destination introuvable" });
 
     if (source.balance < amt) {
       return res.status(400).json({ message: "Solde insuffisant" });
     }
 
-    
+    // Débit / Crédit
     source.balance -= amt;
     dest.balance += amt;
 
     await source.save({ session });
     await dest.save({ session });
 
-    //  TRANSACTIONS DÉBIT / CRÉDIT
     const transactions = await Transaction.create(
       [
         {
@@ -212,17 +235,19 @@ export const internalTransfer = async (req, res) => {
 
     await session.commitTransaction();
     session.endSession();
-  //Crée la notification juste après la transaction
-    await createNotification(
-  req.user.id,
-  "transaction",
-  `Vous avez transféré ${amount} vers le compte ${destinationAccount}.`
-    );
 
-    res.json({
-      message: "Transfert interne réussi",
-      transactions
-    });
+    // 🔔 Notification (non bloquante)
+    try {
+      await createNotification(
+        userId,
+        "virement",
+        `Transfert interne de ${amt} FCFA effectué avec succès`
+      );
+    } catch (e) {
+      console.error("Notification interne non critique :", e);
+    }
+
+    res.json({ message: "Transfert interne réussi", transactions });
 
   } catch (error) {
     await session.abortTransaction();
@@ -232,9 +257,9 @@ export const internalTransfer = async (req, res) => {
   }
 };
 
-
-// ===================== TRANSFERT EXTERNE =====================
-
+/* =====================================================
+   TRANSFERT EXTERNE
+===================================================== */
 export const externalTransfer = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -244,52 +269,31 @@ export const externalTransfer = async (req, res) => {
     const { sourceAccount, beneficiaryIban, amount, description } = req.body;
     const amt = Number(amount);
 
-    if (!sourceAccount || !beneficiaryIban || amt <= 0) {
+    if (!sourceAccount || !beneficiaryIban || !amt || amt <= 0) {
       return res.status(400).json({ message: "Champs invalides" });
     }
 
-    //  Compte source (doit appartenir à l'utilisateur)
-    const source = await Account.findOne({
-      _id: sourceAccount,
-      userId
-    }).session(session);
-
-    if (!source) {
-      return res.status(403).json({
-        message: "Compte source introuvable ou accès interdit"
-      });
-    }
+    const source = await Account.findOne({ _id: sourceAccount, userId }).session(session);
+    if (!source) return res.status(403).json({ message: "Compte source introuvable" });
 
     if (source.balance < amt) {
       return res.status(400).json({ message: "Solde insuffisant" });
     }
 
-    //  Compte bénéficiaire (externe possible)
-    const dest = await Account.findOne({
-      accountNumber: beneficiaryIban
-    }).session(session);
+    const dest = await Account.findOne({ accountNumber: beneficiaryIban }).session(session);
+    if (!dest) return res.status(404).json({ message: "Compte bénéficiaire introuvable" });
 
-    if (!dest) {
-      return res
-        .status(404)
-        .json({ message: "Compte bénéficiaire introuvable" });
-    }
-
-    //  Empêcher virement vers soi-même
     if (dest._id.toString() === source._id.toString()) {
-      return res.status(400).json({
-        message: "Impossible de virer vers le même compte"
-      });
+      return res.status(400).json({ message: "Impossible de virer vers le même compte" });
     }
 
-    // Mise à jour des soldes
+    // Débit / Crédit
     source.balance -= amt;
     dest.balance += amt;
 
     await source.save({ session });
     await dest.save({ session });
 
-    //  TRANSACTIONS DÉBIT / CRÉDIT
     const transactions = await Transaction.create(
       [
         {
@@ -300,21 +304,17 @@ export const externalTransfer = async (req, res) => {
           direction: "expense",
           amount: amt,
           category: "Transfert externe",
-          label:
-            description ||
-            `Virement externe vers ${dest.name || "Bénéficiaire"}`
+          label: description || `Virement externe vers ${beneficiaryIban}`
         },
         {
-          user: dest.userId, // bénéficiaire
+          user: dest.userId,
           sourceAccount: source._id,
           destinationAccount: dest._id,
           type: "external_transfer",
           direction: "income",
           amount: amt,
           category: "Transfert externe",
-          label:
-            description ||
-            `Virement externe reçu de ${source.name || "Expéditeur"}`
+          label: description || "Virement externe reçu"
         }
       ],
       { session, ordered: true }
@@ -323,21 +323,24 @@ export const externalTransfer = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    res.json({
-      message: "Virement externe effectué avec succès",
-      transactions
-    });
+    // 🔔 Notifications (expéditeur + bénéficiaire)
+    try {
+      await createNotification(
+        userId,
+        "virement",
+        `Virement externe de ${amt} FCFA vers ${beneficiaryIban} effectué`
+      );
 
+      await createNotification(
+        dest.userId,
+        "virement",
+        `Vous avez reçu ${amt} FCFA`
+      );
+    } catch (e) {
+      console.error("Notification externe non critique :", e);
+    }
 
-await createNotification(
-  req.user.id,
-  "virement",
-   `Virement externe de ${amt} FCFA vers ${beneficiaryIban} effectué`
-);
-
-
-
-    res.json({ message: "Virement externe effectué", transaction });
+    res.json({ message: "Virement externe effectué avec succès", transactions });
 
   } catch (error) {
     await session.abortTransaction();

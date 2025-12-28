@@ -8,14 +8,14 @@ import { createNotification } from "./notificationController.js";
    UTILITAIRE : récupérer le compte courant par défaut
 ===================================================== */
 const getDefaultCurrentAccount = async (userId) => {
-  // 1️⃣ Compte courant marqué par défaut
+  //  Compte courant marqué par défaut
   let account = await Account.findOne({
     userId,
     type: "courant",
     isDefault: true
   });
 
-  // 2️⃣ Fallback : premier compte courant
+  //  Fallback : premier compte courant
   if (!account) {
     account = await Account.findOne({
       userId,
@@ -51,7 +51,7 @@ export const payCard = async (req, res) => {
     if (!isValidPin)
       return res.status(400).json({ message: "PIN incorrect" });
 
-    // ✅ Compte courant par défaut
+    //  Compte courant par défaut
     const account = await getDefaultCurrentAccount(userId);
     if (!account)
       return res.status(404).json({ message: "Compte courant introuvable" });
@@ -77,13 +77,11 @@ export const payCard = async (req, res) => {
     });
 
     //  Notification
-  await createNotification(
+await createNotification(
   req.user.id,
-  "paiement",
-  "Paiement effectué avec succès"
+  "payment",
+  `Paiement de ${amount} FCFA chez ${merchant} effectué avec succès`
 );
-
-
 
     res.json({
       message: "Paiement carte réussi",
@@ -131,6 +129,17 @@ export const makePayment = async (req, res) => {
       category: service,
       label: `Paiement ${service}`
     });
+
+
+    try {
+  await createNotification(
+    req.user.id,
+    "payment",
+    `Paiement de ${amount} FCFA pour ${service} effectué avec succès`
+  );
+} catch (e) {
+  console.error("Notification payment non critique :", e);
+}
 
     res.json({
       message: "Paiement effectué avec succès",

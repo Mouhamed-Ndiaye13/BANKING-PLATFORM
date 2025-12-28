@@ -3,10 +3,10 @@ import Beneficiaire from "../models/Beneficiaire.js";
 // GET /api/beneficiaires
 export const getBeneficiaires = async (req, res) => {
   try {
-    const userId = req.user._id; 
+    const userId = req.user.id; // assure-toi que c'est bien userId
 
     const beneficiaires = await Beneficiaire.find({
-      user: userId,
+      userId,           // <--- corrigé (avant tu avais user)
       type: "service_payment",
     }).sort({ createdAt: -1 });
 
@@ -17,28 +17,47 @@ export const getBeneficiaires = async (req, res) => {
   }
 };
 
+
 // POST /api/beneficiaires
 export const addBeneficiaire = async (req, res) => {
   try {
-    const userId = req.user._id; // récupéré via le middleware auth
+    const userId = req.user.id;
     const { nom, service, reference } = req.body;
 
-    if (!nom || !service) {
-      return res.status(400).json({ error: "Champs obligatoires manquants" });
+    if (!nom || !service || !reference) {
+      return res.status(400).json({
+        error: "Nom, service et référence sont obligatoires"
+      });
+    }
+
+    // Vérifie si le bénéficiaire existe déjà pour cet utilisateur
+    const exists = await Beneficiaire.findOne({
+      userId,       // <--- corrigé
+      service,
+      reference
+    });
+
+    if (exists) {
+      return res.status(409).json({
+        error: "Ce bénéficiaire existe déjà"
+      });
     }
 
     const newBeneficiaire = await Beneficiaire.create({
-      user: userId, // <-- indispensable !
+      userId,                     // <--- obligatoire
       nom,
-      type: "service_payment",
+      type: "service_payment",    // <-- définit toujours type
       service,
       reference,
     });
 
     res.status(201).json(newBeneficiaire);
+
   } catch (err) {
     console.error("ADD BENEFICIAIRE ERROR:", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
+
+
 
