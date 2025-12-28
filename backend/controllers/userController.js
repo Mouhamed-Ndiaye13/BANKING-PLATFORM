@@ -66,7 +66,7 @@
 
 //     if (!updatedUser) return res.status(404).json({ message: "Utilisateur non trouvé" });
 
-//     res.json(updatedUser);
+//     res.                                   json(updatedUser);
 //   } catch (err) {
 //     res.status(400).json({ message: err.message });
 //   }
