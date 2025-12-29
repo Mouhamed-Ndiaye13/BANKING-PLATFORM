@@ -196,7 +196,13 @@ export const verifyEmail2FA = async (req, res) => {
     const token = generateToken(user._id);
     res.json({
       message: "2FA vérifié avec succès",
-      token
+      token,
+      user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role
+  }
     });
 
   } catch (error) {
@@ -205,6 +211,24 @@ export const verifyEmail2FA = async (req, res) => {
   }
 };
 
+// activer/désactiver la 2FA  dans Profile
+export const toggleTwoFA = async (req, res) => {
+  try {
+    const userId = req.user.id; // depuis authMiddleware
+    const { twoFA } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
+
+    user.twoFA = twoFA;
+    await user.save();
+
+    res.json({ twoFA: user.twoFA });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
 
 // ------------------- FORGOT PASSWORD -------------------
 export const forgotPassword = async (req, res) => {
