@@ -20,8 +20,8 @@ export default async function auth(req, res, next) {
     if (!user) {
       return res.status(401).json({ error: "User not found" });
     }
+    req.user = user;
 
-    req.user = { id: user._id };
  //  user réel (name, email, avatar)
     next();
   } catch (err) {

@@ -23,7 +23,7 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 import beneficiaireRoutes from "./routes/beneficiaireRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
-
+import contactRoutes from "./routes/contactRoutes.js";
 dotenv.config();
 const app = express();
 
@@ -87,6 +87,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/beneficiaires", beneficiaireRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/contacts", contactRoutes);
 
 
 app.get("/", (req, res) => res.send("Backend Banque Rewmi"));
