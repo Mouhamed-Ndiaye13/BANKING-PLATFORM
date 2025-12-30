@@ -173,7 +173,7 @@ export const verifyEmail2FA = async (req, res) => {
     if (!user || !user.email2FACode)
       return res.status(400).json({ message: "Code invalide" });
 
-    // Expiration
+    // Vérifie l'expiration
     if (user.email2FAExpires < Date.now()) {
       user.email2FACode = null;
       user.email2FAExpires = null;
@@ -181,36 +181,52 @@ export const verifyEmail2FA = async (req, res) => {
       return res.status(401).json({ message: "Code expiré" });
     }
 
-    // Limite tentatives
-    if (user.email2FATries >= 5) {
-      user.email2FACode = null;
-      user.email2FAExpires = null;
-      await user.save();
-      return res.status(429).json({ message: "Trop de tentatives" });
-    }
-
+    // Vérifie le code
     const isValid = await bcrypt.compare(code, user.email2FACode);
     if (!isValid) {
-      user.email2FATries += 1;
-      await user.save();
       return res.status(401).json({ message: "Code incorrect" });
     }
 
-    // Succès
+    // Succès : réinitialise le code
     user.email2FACode = null;
     user.email2FAExpires = null;
-    user.email2FATries = 0;
     await user.save();
 
+    // Génère le token JWT
     const token = generateToken(user._id);
     res.json({
       message: "2FA vérifié avec succès",
-      token
+      token,
+      user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role
+  }
     });
 
   } catch (error) {
     console.error("VERIFY 2FA ERROR:", error);
     res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// activer/désactiver la 2FA  dans Profile
+export const toggleTwoFA = async (req, res) => {
+  try {
+    const userId = req.user.id; // depuis authMiddleware
+    const { twoFA } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
+
+    user.twoFA = twoFA;
+    await user.save();
+
+    res.json({ twoFA: user.twoFA });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
   }
 };
 

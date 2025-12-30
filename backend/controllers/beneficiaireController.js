@@ -1,28 +1,63 @@
 import Beneficiaire from "../models/Beneficiaire.js";
 
-// Récupérer tous les bénéficiaires pour un compte
+// GET /api/beneficiaires
 export const getBeneficiaires = async (req, res) => {
-  const { accountId } = req.params;
   try {
-    const beneficiaries = await Beneficiaire.find({ accountId });
-    res.json(beneficiaries);
+    const userId = req.user.id; // assure-toi que c'est bien userId
+
+    const beneficiaires = await Beneficiaire.find({
+      userId,           // <--- corrigé (avant tu avais user)
+      type: "service_payment",
+    }).sort({ createdAt: -1 });
+
+    res.json(beneficiaires);
   } catch (err) {
+    console.error("GET BENEFICIAIRES ERROR:", err);
     res.status(500).json({ error: "Erreur récupération bénéficiaires" });
   }
 };
 
-// Ajouter un nouveau bénéficiaire
 
+// POST /api/beneficiaires
 export const addBeneficiaire = async (req, res) => {
   try {
-    const { accountId, nom, type } = req.body;
-    if (!accountId || !nom || !type) {
-      return res.status(400).json({ error: "Tous les champs sont obligatoires" });
+    const userId = req.user.id;
+    const { nom, service, reference } = req.body;
+
+    if (!nom || !service || !reference) {
+      return res.status(400).json({
+        error: "Nom, service et référence sont obligatoires"
+      });
     }
 
-    const newB = await Beneficiaire.create({ accountId, nom, type });
-    res.status(201).json(newB);
+    // Vérifie si le bénéficiaire existe déjà pour cet utilisateur
+    const exists = await Beneficiaire.findOne({
+      userId,       // <--- corrigé
+      service,
+      reference
+    });
+
+    if (exists) {
+      return res.status(409).json({
+        error: "Ce bénéficiaire existe déjà"
+      });
+    }
+
+    const newBeneficiaire = await Beneficiaire.create({
+      userId,                     // <--- obligatoire
+      nom,
+      type: "service_payment",    // <-- définit toujours type
+      service,
+      reference,
+    });
+
+    res.status(201).json(newBeneficiaire);
+
   } catch (err) {
+    console.error("ADD BENEFICIAIRE ERROR:", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
+
+
+

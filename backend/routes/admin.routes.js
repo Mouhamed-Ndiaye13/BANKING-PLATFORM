@@ -18,19 +18,17 @@ const router = express.Router();
 router.post("/login", loginAdmin);
 
 // Toutes les autres routes nécessitent un token admin
-router.get("/users", adminAuth, getUsers);
-router.delete("/users/:id", adminAuth, deleteUser);
-router.patch("/users/:id/block", adminAuth, toggleBlockUser);
-router.get("/accounts", adminAuth, getAccounts);
-router.get("/transactions", adminAuth, getTransactions);
-router.post("/transactions/:id/cancel", adminAuth, cancelTransaction);
-router.post("/accounts/:id/deposit", adminAuth, depositToAccount);
-// Retrait
-router.post("/accounts/:id/withdraw", adminAuth, withdrawFromAccount);
-// GET toutes les transactions
-router.get("/transactions", adminAuth, getTransactions);
+router.use(adminAuth);
 
-// ANNULER une transaction
-router.patch("/transactions/:id/cancel", adminAuth, cancelTransaction);
+router.get("/users", getUsers);
+router.delete("/users/:id", deleteUser);
+router.patch("/users/:id/block", toggleBlockUser);
+
+router.get("/accounts", getAccounts);
+router.post("/accounts/:id/deposit", depositToAccount);
+router.post("/accounts/:id/withdraw", withdrawFromAccount);
+
+router.get("/transactions", getTransactions);
+router.patch("/transactions/:id/cancel", cancelTransaction);
 
 export default router;
