@@ -1,16 +1,15 @@
 import admin from "firebase-admin";
-import fs from "fs";
-import path from "path";
 
-const serviceAccountPath = path.join(
-  process.cwd(),
-  "service",
-  "banquerewmi-firebase-adminsdk-fbsvc-e157df0e06.json"
-);
-
-const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
-
+// 🔹 Utilisation de la variable d'environnement FIREBASE_ADMIN_JSON
 if (!admin.apps.length) {
+  if (!process.env.FIREBASE_ADMIN_JSON) {
+    throw new Error(
+      "La variable d'environnement FIREBASE_ADMIN_JSON n'est pas définie !"
+    );
+  }
+
+  const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_JSON);
+
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
