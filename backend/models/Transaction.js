@@ -1,66 +1,41 @@
+// models/Transaction.js
 import mongoose from "mongoose";
 
-const TransactionSchema = new mongoose.Schema(
-  {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true
-    },
+const TransactionSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 
-    sourceAccount: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Account",
-      index: true
-    },
+  sourceAccount: { type: mongoose.Schema.Types.ObjectId, ref: "Account" },
+  destinationAccount: { type: mongoose.Schema.Types.ObjectId, ref: "Account" },
 
-    destinationAccount: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Account",
-      index: true
-    },
-
-    type: {
-      type: String,
-      enum: ["depot", "retrait", "internal_transfer", "external_transfer"],
-      required: true
-    },
-
-    amount: {
-      type: Number,
-      required: true,
-      min: 1
-    },
-
-    category: String,
-
-    cardId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Card"
-    },
-
-    merchant: String,
-
-    label: String,
-
-    cancelled: {
-      type: Boolean,
-      default: false
-    },
-
-    status: {
-      type: String,
-      enum: ["pending", "completed", "cancelled"],
-      default: "completed"
-    }
+  type: {
+    type: String,
+    enum: ["depot", "retrait", "internal_transfer", "external_transfer","payment",
+    "card_payment"],
+    required: true
   },
-  { timestamps: true }
-);
 
-// 🔍 Indexes pour performance
-TransactionSchema.index({ user: 1, createdAt: -1 });
+  direction: {                 
+    type: String,
+    enum: ["income", "expense"],
+    required: true
+  },
 
-// Export
-const Transaction = mongoose.model("Transaction", TransactionSchema);
+  amount: { type: Number, required: true },
+
+  category: { type: String},
+
+  beneficiaryIban: { type: String },
+
+  cardId: { type: mongoose.Schema.Types.ObjectId, ref: "Card" },
+  merchant: String,
+
+  label: String,
+  date: { type: Date, default: Date.now }
+}, { timestamps: true });
+
+const Transaction =
+  mongoose.models.Transaction ||
+  mongoose.model("Transaction", TransactionSchema);
+
+
 export default Transaction;

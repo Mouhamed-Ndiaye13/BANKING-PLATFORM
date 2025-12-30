@@ -1,4 +1,4 @@
-
+// routes/transactionRoutes.js
 import { Router } from "express";
 import auth from "../middleware/auth.js";
 import { getTransactions, getTransactionById, cancelTransaction } from "../controllers/transactionController.js";
@@ -10,5 +10,3 @@ router.get("/:id", auth, getTransactionById);
 router.patch("/:id/cancel", auth, cancelTransaction);
 
 export default router;
-
-

@@ -3,7 +3,7 @@ import Notification from "../models/notification.js";
 // Récupérer toutes les notifications d'un utilisateur
 export const getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    const notifications = await Notification.find({ userId: req.user.id }).sort({ createdAt: -1 });
     res.json(notifications);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -33,4 +33,4 @@ export const markAsRead = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-};
+}
