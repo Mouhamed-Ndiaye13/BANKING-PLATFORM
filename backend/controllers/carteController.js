@@ -144,4 +144,31 @@ export const setPin = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+// récupérer les cartes de l’utilisateur
+export const getMyCards = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const cards = await Card.find({ userId })
+      .populate("accountId", "currency balance")
+      .sort({ createdAt: -1 });
+
+    const formatted = cards.map(card => ({
+      id: card._id,
+      brand: card.brand,
+      last4: card.dernierCard,
+      expiration: card.expiration,
+      status: card.status,
+      limitQuoti: card.limitQuoti,
+      type: card.accountId.currency === "XOF" ? "Carte Débit" : "Carte",
+    }));
+
+    res.status(200).json(formatted);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
 

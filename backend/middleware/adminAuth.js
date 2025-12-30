@@ -1,3 +1,4 @@
+// middleware/adminAuth.js
 import jwt from "jsonwebtoken";
 
 export default function adminAuth(req, res, next) {
@@ -5,13 +6,11 @@ export default function adminAuth(req, res, next) {
   if (!authHeader) return res.status(401).json({ message: "Token manquant" });
 
   const token = authHeader.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "Token invalide" });
-
   try {
-    const decoded = jwt.verify(token, process.env.JWT_ADMIN_SECRET);
-    req.user = decoded; // { id, email, role }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // id et role
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ message: "Token invalide ou expiré" });
   }
 }
