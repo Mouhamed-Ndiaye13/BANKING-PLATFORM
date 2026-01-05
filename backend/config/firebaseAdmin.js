@@ -1,19 +1,24 @@
 import admin from "firebase-admin";
+import dotenv from "dotenv";
 
-if (!process.env.FIREBASE_ADMIN_JSON) {
-  throw new Error("La variable d'environnement FIREBASE_ADMIN_JSON n'est pas définie !");
+dotenv.config();
+
+if (
+  !process.env.FIREBASE_PROJECT_ID ||
+  !process.env.FIREBASE_CLIENT_EMAIL ||
+  !process.env.FIREBASE_PRIVATE_KEY
+) {
+  throw new Error("Les variables d'environnement Firebase ne sont pas définies !");
 }
 
-// Parse JSON de la variable d'environnement
-const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_JSON);
+const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n");
 
-// Assurez-vous que la clé privée a bien les \n échappés
-serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-}
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey,
+  }),
+});
 
 export default admin;
