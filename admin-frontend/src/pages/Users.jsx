@@ -11,31 +11,34 @@ export default function Users() {
   const [perPage] = useState(5);
 
   const fetchUsers = async () => {
-    try {
-      const res = await api("/users", "GET", getToken());
-      setUsers(res);
-    } catch (err) {
-      console.error("Erreur fetch users :", err);
-    }
-  };
+  try {
+    const res = await api("GET", "/users");
+    setUsers(res);
+  } catch (err) {
+    console.error("Erreur fetch users :", err);
+  }
+};
+
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
-    try {
-      await api(`/users/${id}`, "DELETE", getToken());
-      setUsers(users.filter(u => u._id !== id));
-    } catch (err) {
-      alert(err.message);
-    }
-  };
+  if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
+
+  try {
+    await api("DELETE", `/users/${id}`);
+    setUsers(users.filter(u => u._id !== id));
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
 
   const handleBlock = async (id) => {
   try {
-    await api(`/users/${id}/block`, "PATCH", getToken());
+    await api("PATCH", `/users/${id}/block`);
 
     setUsers(users.map(u =>
       u._id === id ? { ...u, blocked: !u.blocked } : u
@@ -44,6 +47,7 @@ export default function Users() {
     alert(err.message);
   }
 };
+
 
 
   const filteredUsers = users.filter(u =>

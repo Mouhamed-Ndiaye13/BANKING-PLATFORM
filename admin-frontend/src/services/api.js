@@ -1,7 +1,7 @@
 // services/api.js
 import axios from "axios";
 
-const API_BASE = "http://localhost:5000/admin";
+const API_BASE = "https://banking-backend-rtsx.onrender.com/admin";
 
 export const api = async (method, endpoint, data = null) => {
   try {
