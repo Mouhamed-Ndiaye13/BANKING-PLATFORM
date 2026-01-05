@@ -8,10 +8,14 @@ import { generateToken } from "../utils/generateToken.js";
 import { transporter } from "../utils/mailer.js";
 // ------------------- REGISTER -------------------
 export const register = async (req, res) => {
+    console.time("login"); // 🟢 Démarre le timer
+
   try {
     const { prenom, name, email, password, telephone, dateDeNaissance} = req.body;
 
     const exist = await User.findOne({ email });
+    console.timeEnd("login"); // ⏹ Arrête le timer avant de répondre
+
     if (exist) {
       return res.status(400).json({ message: "Email déjà utilisé" });
     }
@@ -75,6 +79,8 @@ export const register = async (req, res) => {
 
   } catch (err) {
     console.error("REGISTER ERROR:", err);
+    console.timeEnd("login"); // ⏹ Arrête le timer juste avant d’envoyer la réponse
+
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
