@@ -33,26 +33,45 @@ const app = express();
 // ==================
 // CORS
 // ==================
-const allowedOrigins = process.env.FRONTEND_URLS?.split(",") || [];
-app.use(cors({ origin: allowedOrigins, credentials: true }));
-app.use(
-cors({
-origin: (origin, callback) => {
-// Autorise Postman, mobile, etc.
-if (!origin) return callback(null, true);
+// const allowedOrigins = process.env.FRONTEND_URLS?.split(",") || [];
+// app.use(cors({ origin: allowedOrigins, credentials: true }));
+// app.use(
+// cors({
+// origin: (origin, callback) => {
+// // Autorise Postman, mobile, etc.
+// if (!origin) return callback(null, true);
 
-if (allowedOrigins.includes(origin)) {  
-    return callback(null, true);  
-  } else {  
-    return callback(new Error("Not allowed by CORS"));  
-  }  
-},  
-credentials: true,  
-methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],  
-allowedHeaders: ["Content-Type", "Authorization"],
+// if (allowedOrigins.includes(origin)) {  
+//     return callback(null, true);  
+//   } else {  
+//     return callback(new Error("Not allowed by CORS"));  
+//   }  
+// },  
+// credentials: true,  
+// methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],  
+// allowedHeaders: ["Content-Type", "Authorization"],
 
-})
-);
+// })
+// );
+const allowedOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS.split(",")
+  : [];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Autorise Postman, SSR, mobile apps, etc.
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
