@@ -12,8 +12,6 @@ const UserSchema = new mongoose.Schema(
 
     avatar: { type: String, default: null },
 
-    blocked: { type: Boolean, default: false }, // <-- POUR BLOQUER / DÉBLOQUER L'UTILISATEUR
-
     isVerified: { type: Boolean, default: false },
     emailToken: String,
     emailTokenExpires: Date,
@@ -23,21 +21,20 @@ const UserSchema = new mongoose.Schema(
     email2FAExpires: Date,
     email2FATries: { type: Number, default: 0 },
 
-    resetToken: { type: String },
-    resetTokenExpire: { type: Date },
+    resetToken: String,
+    resetTokenExpire: Date,
 
-    googleId: { type: String, default: null }, // si connexion Google
+    // ✅ Ajout du champ blocked
+    blocked: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-// Comparer mot de passe
 UserSchema.methods.comparePassword = async function (enteredPassword) {
   if (!enteredPassword || !this.password) return false;
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Création ou récupération utilisateur Google
 UserSchema.statics.findOrCreateGoogleUser = async function (profile) {
   const email = profile.email || profile?.emails?.[0]?.value;
   if (!email) throw new Error("Google profile sans email");
@@ -47,7 +44,6 @@ UserSchema.statics.findOrCreateGoogleUser = async function (profile) {
 
   user = await this.create({
     name: profile.name || profile?.given_name || "Utilisateur Google",
-    prenom: profile.family_name || " ",
     email,
     avatar: profile.picture || null,
     googleId: profile.sub || profile.id,

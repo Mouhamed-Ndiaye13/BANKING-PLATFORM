@@ -29,13 +29,12 @@ export const loginAdmin = async (req, res) => {
 };
 
 // -------- GET USERS --------
-// GET all users avec comptes
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find().lean(); // .lean() pour un objet simple
+    const users = await User.find().lean();
     for (let user of users) {
       const accounts = await Account.find({ userId: user._id });
-      user.accounts = accounts; // injecte les comptes dans chaque user
+      user.accounts = accounts;
     }
     res.json(users);
   } catch (err) {
@@ -44,11 +43,11 @@ export const getUsers = async (req, res) => {
   }
 };
 
-// DELETE user
+// -------- DELETE USER --------
 export const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: "User introuvable" });
+    if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
 
     await Account.deleteMany({ userId: user._id });
     await user.deleteOne();
@@ -58,14 +57,11 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// BLOCK/UNBLOCK user
+// -------- BLOCK / UNBLOCK USER --------
 export const toggleBlockUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: "Utilisateur introuvable" });
-    }
+    if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
 
     user.blocked = !user.blocked;
     await user.save();
@@ -80,11 +76,10 @@ export const toggleBlockUser = async (req, res) => {
   }
 };
 
-
 // -------- GET ACCOUNTS --------
 export const getAccounts = async (req, res) => {
   try {
-    const accounts = await Account.find().populate("userId", "email phone"); // Ajoute email et phone
+    const accounts = await Account.find().populate("userId", "email phone");
     res.json(accounts);
   } catch (err) {
     console.error(err);
@@ -92,10 +87,9 @@ export const getAccounts = async (req, res) => {
   }
 };
 
-
 // -------- DEPOSIT TO ACCOUNT --------
 export const depositToAccount = async (req, res) => {
-  const { id } = req.params; // ID du compte
+  const { id } = req.params;
   const { amount } = req.body;
 
   if (amount <= 0) return res.status(400).json({ message: "Montant invalide" });
@@ -114,9 +108,9 @@ export const depositToAccount = async (req, res) => {
   }
 };
 
-// RETRAIT SUR COMPTE
+// -------- WITHDRAW FROM ACCOUNT --------
 export const withdrawFromAccount = async (req, res) => {
-  const { id } = req.params; // ID du compte
+  const { id } = req.params;
   const { amount } = req.body;
 
   if (amount <= 0) return res.status(400).json({ message: "Montant invalide" });
@@ -138,14 +132,14 @@ export const withdrawFromAccount = async (req, res) => {
   }
 };
 
-// GET toutes les transactions avec infos complètes
+// -------- GET TRANSACTIONS --------
 export const getTransactions = async (req, res) => {
   try {
     const transactions = await Transaction.find()
-      .populate("user", "name prenom email phone") // infos utilisateur
-      .populate("sourceAccount", "accountNumber type balance") // infos compte source
-      .populate("destinationAccount", "accountNumber type balance") // infos compte destination
-      .sort({ createdAt: -1 }); // trier par date décroissante
+      .populate("user", "name prenom email phone")
+      .populate("sourceAccount", "accountNumber type balance")
+      .populate("destinationAccount", "accountNumber type balance")
+      .sort({ createdAt: -1 });
 
     res.status(200).json(transactions);
   } catch (err) {
@@ -154,7 +148,7 @@ export const getTransactions = async (req, res) => {
   }
 };
 
-// ANNULER une transaction
+// -------- CANCEL TRANSACTION --------
 export const cancelTransaction = async (req, res) => {
   try {
     const { id } = req.params;
@@ -166,7 +160,6 @@ export const cancelTransaction = async (req, res) => {
     if (!trx) return res.status(404).json({ message: "Transaction introuvable" });
     if (trx.status === "cancelled") return res.json({ message: "Déjà annulée" });
 
-    // Retourner l'argent
     if (trx.sourceAccount && trx.destinationAccount) {
       trx.sourceAccount.balance += trx.amount;
       trx.destinationAccount.balance -= trx.amount;
