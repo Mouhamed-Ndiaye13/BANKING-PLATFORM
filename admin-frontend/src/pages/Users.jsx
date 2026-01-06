@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { api } from "../services/api";
-import { getToken } from "../services/auth";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -13,7 +12,7 @@ export default function Users() {
   // Récupérer tous les utilisateurs
   const fetchUsers = async () => {
     try {
-      const res = await api("get", "/admin/users", null); // null car GET n'a pas de data
+      const res = await api("get", "/admin/users");
       setUsers(res);
     } catch (err) {
       console.error("Erreur fetch users :", err);
@@ -28,7 +27,7 @@ export default function Users() {
   const handleDelete = async (id) => {
     if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
     try {
-      await api("delete", `/admin/users/${id}`, null); // DELETE n'a pas besoin de data
+      await api("delete", `/admin/users/${id}`);
       setUsers(users.filter(u => u._id !== id));
     } catch (err) {
       alert(err.message || "Erreur lors de la suppression");
@@ -38,7 +37,7 @@ export default function Users() {
   // Bloquer / Débloquer un utilisateur
   const handleBlock = async (id) => {
     try {
-      await api("patch", `/admin/users/${id}/block`, null); // PATCH n'a pas besoin de body
+      await api("patch", `/admin/users/${id}/block`);
       setUsers(users.map(u =>
         u._id === id ? { ...u, blocked: !u.blocked } : u
       ));
@@ -49,7 +48,7 @@ export default function Users() {
 
   // Filtrer les utilisateurs
   const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
+    (u.name + " " + u.prenom).toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
