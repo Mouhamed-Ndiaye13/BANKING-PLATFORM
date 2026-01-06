@@ -59,9 +59,7 @@ export default function Users() {
 
   return (
     <div className="flex min-h-screen bg-[#f5f2ee]">
-      <Sidebar />
       <div className="flex-1">
-        <Header />
         <div className="p-6">
           <h1 className="text-3xl font-bold mb-6 text-[#432703]">Gestion des utilisateurs</h1>
 

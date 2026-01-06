@@ -33,21 +33,14 @@ const app = express();
 // ==================
 // CORS
 // ==================
-const allowedOrigins = process.env.FRONTEND_URLS?.split(",") || [];
+const allowedOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS.split(",").map(o => o.trim())
+  : [];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // Postman / mobile
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      console.log("CORS bloqué pour :", origin);
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-    methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
-    allowedHeaders: ["Content-Type","Authorization"],
-  })
-);
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
 
 // Préflights OPTIONS
 app.options("*", cors());
