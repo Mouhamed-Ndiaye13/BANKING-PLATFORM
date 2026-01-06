@@ -1,3 +1,4 @@
+// src/pages/Login.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
@@ -11,17 +12,16 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+
     try {
-      const res = await api("POST", "/login", { email, password });
-      const token = res.token || res.accessToken;
+      const res = await api("post", "/admin/login", { email, password });
 
-      if (!token) {
+      if (res.token) {
+        localStorage.setItem("adminToken", res.token);
+        navigate("/dashboard");
+      } else {
         setError("Token non reçu, vérifiez vos identifiants");
-        return;
       }
-
-      localStorage.setItem("adminToken", token);
-      navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Erreur login");
     }
