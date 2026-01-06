@@ -8,12 +8,12 @@ export default function Users() {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [perPage] = useState(5);
+  const perPage = 5;
 
-  // Récupération des utilisateurs
+  // Récupérer tous les utilisateurs
   const fetchUsers = async () => {
     try {
-      const res = await api("GET", "/admin/users", getToken());
+      const res = await api("get", "/admin/users", null); // null car GET n'a pas de data
       setUsers(res);
     } catch (err) {
       console.error("Erreur fetch users :", err);
@@ -28,22 +28,22 @@ export default function Users() {
   const handleDelete = async (id) => {
     if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
     try {
-      await api("DELETE", `/admin/users/${id}`, getToken());
+      await api("delete", `/admin/users/${id}`, null); // DELETE n'a pas besoin de data
       setUsers(users.filter(u => u._id !== id));
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Erreur lors de la suppression");
     }
   };
 
   // Bloquer / Débloquer un utilisateur
   const handleBlock = async (id) => {
     try {
-      await api("PATCH", `/admin/users/${id}/block`, getToken());
+      await api("patch", `/admin/users/${id}/block`, null); // PATCH n'a pas besoin de body
       setUsers(users.map(u =>
         u._id === id ? { ...u, blocked: !u.blocked } : u
       ));
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Erreur lors du blocage/déblocage");
     }
   };
 
@@ -58,7 +58,9 @@ export default function Users() {
 
   return (
     <div className="flex min-h-screen bg-[#f5f2ee]">
+      <Sidebar />
       <div className="flex-1">
+        <Header />
         <div className="p-6">
           <h1 className="text-3xl font-bold mb-6 text-[#432703]">Gestion des utilisateurs</h1>
 
@@ -96,9 +98,9 @@ export default function Users() {
                 )}
                 {paginatedUsers.map(u => (
                   <tr key={u._id} className="border-b hover:bg-[#f0e6da]">
-                    <td className="p-3">{u.name}</td>
+                    <td className="p-3">{u.name} {u.prenom}</td>
                     <td className="p-3">{u.email}</td>
-                    <td className="p-3">{u.phone || "N/A"}</td>
+                    <td className="p-3">{u.telephone || "N/A"}</td>
                     <td className="p-3">
                       {u.accounts?.find(a => a.type === "courant")?.accountNumber || "N/A"}
                     </td>

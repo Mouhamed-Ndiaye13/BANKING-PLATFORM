@@ -33,28 +33,24 @@ const app = express();
 // ==================
 // CORS
 // ==================
-const allowedOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(",")
-  : [];
+const allowedOrigins = process.env.FRONTEND_URLS?.split(",") || [];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Autorise Postman / SSR / mobile (origin undefined)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
+      if (!origin) return callback(null, true); // Postman / mobile
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       console.log("CORS bloqué pour :", origin);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+    allowedHeaders: ["Content-Type","Authorization"],
   })
 );
+
+// Préflights OPTIONS
+app.options("*", cors());
 
 // Autoriser toutes les requêtes OPTIONS (préflights)
 app.options("*", cors());
