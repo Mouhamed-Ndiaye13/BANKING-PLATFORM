@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { api } from "../services/api";
-import { getToken } from "../services/auth";
 
 export default function Dashboard() {
   const [users, setUsers] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -15,12 +15,16 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const token = getToken();
-      setUsers(await api("/users", "GET", token));
-      setAccounts(await api("/accounts", "GET", token));
-      setTransactions(await api("/transactions", "GET", token));
+      const usersData = await api("GET", "/users");
+      const accountsData = await api("GET", "/accounts");
+      const transactionsData = await api("GET", "/transactions");
+
+      setUsers(usersData);
+      setAccounts(accountsData);
+      setTransactions(transactionsData);
     } catch (err) {
-      console.error(err.message);
+      console.error("Dashboard error:", err);
+      setError(err.message || "Erreur Dashboard");
     }
   };
 
@@ -28,10 +32,12 @@ export default function Dashboard() {
 
   return (
     <div className="app">
-      <div className="content">
+      <Header />
+      <div className="flex">
+        <Sidebar />
+        <div className="flex-1 p-4">
+          {error && <p className="text-red-600">{error}</p>}
 
-        <div className="page">
-          {/* STATS */}
           <div className="stats-grid">
             <StatCard title="Utilisateurs" value={users.length} />
             <StatCard title="Comptes" value={accounts.length} />
@@ -39,9 +45,8 @@ export default function Dashboard() {
             <StatCard title="Solde total" value={`${totalBalance.toLocaleString()} FCFA`} />
           </div>
 
-          {/* TABLE */}
-          <div className="table-card" style={{ marginTop: 25 }}>
-            <h3 style={{ marginBottom: 15 }}>Transactions récentes</h3>
+          <div className="table-card mt-6">
+            <h3>Transactions récentes</h3>
             <table>
               <thead>
                 <tr>
@@ -61,14 +66,12 @@ export default function Dashboard() {
               </tbody>
             </table>
           </div>
-
         </div>
       </div>
     </div>
   );
 }
 
-/* COMPONENT */
 function StatCard({ title, value }) {
   return (
     <div className="stat-card">

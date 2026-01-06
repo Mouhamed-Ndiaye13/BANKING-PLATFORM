@@ -10,9 +10,17 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
     try {
-      const res = await api("post", "/login", { email, password });
-      localStorage.setItem("adminToken", res.token); // stocker le token
+      const res = await api("POST", "/login", { email, password });
+      const token = res.token || res.accessToken;
+
+      if (!token) {
+        setError("Token non reçu, vérifiez vos identifiants");
+        return;
+      }
+
+      localStorage.setItem("adminToken", token);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Erreur login");

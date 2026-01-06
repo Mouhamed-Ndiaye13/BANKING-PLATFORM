@@ -15,23 +15,26 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* LOGIN */}
         <Route path="/login" element={<Login />} />
+
+        {/* ROUTES PROTÉGÉES */}
         <Route
           path="/*"
           element={
             <PrivateRoute>
               <Header />
-              <div className="flex">
+              <div className="flex min-h-screen">
                 <Sidebar />
                 <div className="flex-1 p-4">
                   <Routes>
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/users" element={<Users />} />
                     <Route path="/users/:id" element={<UserDetails />} />
                     <Route path="/accounts" element={<Accounts />} />
                     <Route path="/transactions" element={<Transactions />} />
                     <Route path="/payments" element={<Payments />} />
-                    <Route path="/users" element={<Users />} />
                     <Route path="/support" element={<Support />} />
                   </Routes>
                 </div>
@@ -39,6 +42,9 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
+        {/* Redirection par défaut */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

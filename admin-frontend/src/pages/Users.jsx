@@ -1,54 +1,43 @@
 import { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import Header from "../components/Header";
 import { api } from "../services/api";
-import { getToken } from "../services/auth";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [perPage] = useState(5);
+  const perPage = 5;
 
   const fetchUsers = async () => {
-  try {
-    const res = await api("GET", "/users");
-    setUsers(res);
-  } catch (err) {
-    console.error("Erreur fetch users :", err);
-  }
-};
-
+    try {
+      const data = await api("GET", "/users");
+      setUsers(data || []);
+    } catch (err) {
+      console.error("Erreur fetch users :", err);
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const handleDelete = async (id) => {
-  if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
-
-  try {
-    await api("DELETE", `/users/${id}`);
-    setUsers(users.filter(u => u._id !== id));
-  } catch (err) {
-    alert(err.message);
-  }
-};
-
+    if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
+    try {
+      await api("DELETE", `/users/${id}`);
+      setUsers(users.filter(u => u._id !== id));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
   const handleBlock = async (id) => {
-  try {
-    await api("PATCH", `/users/${id}/block`);
-
-    setUsers(users.map(u =>
-      u._id === id ? { ...u, blocked: !u.blocked } : u
-    ));
-  } catch (err) {
-    alert(err.message);
-  }
-};
-
-
+    try {
+      await api("PATCH", `/users/${id}/block`);
+      setUsers(users.map(u => u._id === id ? { ...u, blocked: !u.blocked } : u));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
   const filteredUsers = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -63,15 +52,13 @@ export default function Users() {
       <div className="flex-1 p-4">
         <h1 className="text-2xl font-bold mb-4">Liste des utilisateurs</h1>
 
-        <div className="mb-4 flex gap-2">
-          <input
-            type="text"
-            placeholder="Rechercher..."
-            className="border p-2 rounded flex-1"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <input
+          type="text"
+          placeholder="Rechercher..."
+          className="border p-2 rounded flex-1 mb-4"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
         <table className="min-w-full border">
           <thead className="bg-[#a28870] text-white">
@@ -93,16 +80,10 @@ export default function Users() {
                 <td className="p-2">{u.accounts?.find(a => a.type === "courant")?.accountNumber || "N/A"}</td>
                 <td className="p-2">{u.blocked ? "Bloqué" : "Actif"}</td>
                 <td className="p-2 flex gap-2">
-                  <button
-                    className="bg-[#432703] text-white px-2 py-1 rounded"
-                    onClick={() => handleBlock(u._id, u.blocked)}
-                  >
+                  <button className="bg-[#432703] text-white px-2 py-1 rounded" onClick={() => handleBlock(u._id)}>
                     {u.blocked ? "Débloquer" : "Bloquer"}
                   </button>
-                  <button
-                    className="bg-red-600 text-white px-2 py-1 rounded"
-                    onClick={() => handleDelete(u._id)}
-                  >
+                  <button className="bg-red-600 text-white px-2 py-1 rounded" onClick={() => handleDelete(u._id)}>
                     Supprimer
                   </button>
                 </td>
@@ -111,7 +92,6 @@ export default function Users() {
           </tbody>
         </table>
 
-        {/* Pagination */}
         <div className="mt-4 flex justify-center gap-2">
           {Array.from({ length: totalPages }, (_, i) => (
             <button

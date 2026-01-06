@@ -10,16 +10,17 @@ import {
   deleteUser,
   toggleBlockUser
 } from "../controllers/admin.controller.js";
-import adminAuth from "../middleware/adminAuth.js"; // middleware JWT admin
+import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
 // LOGIN (pas besoin de token)
 router.post("/login", loginAdmin);
 
-// Toutes les autres routes nécessitent un token admin
+// Middleware pour toutes les autres routes
 router.use(adminAuth);
 
+// Routes sécurisées
 router.get("/users", getUsers);
 router.delete("/users/:id", deleteUser);
 router.patch("/users/:id/block", toggleBlockUser);

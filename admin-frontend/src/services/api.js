@@ -5,16 +5,20 @@ const API_BASE = "https://banking-backend-rtsx.onrender.com/admin";
 
 export const api = async (method, endpoint, data = null) => {
   try {
+    // Récupère le token depuis localStorage
     const token = localStorage.getItem("adminToken");
+
     const res = await axios({
       method,
       url: `${API_BASE}${endpoint}`,
       data,
-      headers: { Authorization: token ? `Bearer ${token}` : "" },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
+
     return res.data;
   } catch (err) {
     console.error("API ERROR:", err.response?.data || err.message);
-    throw err.response?.data || err;
+    // Renvoie un objet standard avec message
+    throw err.response?.data || { message: err.message };
   }
 };
