@@ -9,13 +9,17 @@ export default function Users() {
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 5;
 
-  // Récupérer tous les utilisateurs
+  // ✅ Récupération des users
   const fetchUsers = async () => {
     try {
       const res = await api("get", "/admin/users");
       setUsers(res);
     } catch (err) {
       console.error("Erreur fetch users :", err);
+      if (err.message === "Token invalide ou expiré") {
+        alert("Session expirée. Veuillez vous reconnecter.");
+        window.location.href = "/login";
+      }
     }
   };
 
@@ -37,10 +41,8 @@ export default function Users() {
   // Bloquer / Débloquer un utilisateur
   const handleBlock = async (id) => {
     try {
-      await api("patch", `/admin/users/${id}/block`);
-      setUsers(users.map(u =>
-        u._id === id ? { ...u, blocked: !u.blocked } : u
-      ));
+      const res = await api("patch", `/admin/users/${id}/block`);
+      setUsers(users.map(u => u._id === id ? { ...u, blocked: res.blocked } : u));
     } catch (err) {
       alert(err.message || "Erreur lors du blocage/déblocage");
     }
@@ -48,7 +50,7 @@ export default function Users() {
 
   // Filtrer les utilisateurs
   const filteredUsers = users.filter(u =>
-    (u.name + " " + u.prenom).toLowerCase().includes(search.toLowerCase()) ||
+    u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
