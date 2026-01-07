@@ -123,8 +123,12 @@ export const confirmEmail = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log("Req body:", req.body);
+
 
     const user = await User.findOne({ email });
+    console.log("User trouvé:", user);
+
     if (!user)
       return res.status(401).json({ message: "Identifiants invalides" });
 
@@ -134,6 +138,8 @@ export const login = async (req, res) => {
 
     // 2FA par email
     if (user.twoFactorEnabled) {
+        console.log("2FA activé pour l'utilisateur");
+
       const code = Math.floor(100000 + Math.random() * 900000).toString();
 
       user.email2FACode = await bcrypt.hash(code, 10);
@@ -252,7 +258,7 @@ export const forgotPassword = async (req, res) => {
     user.resetTokenExpire = Date.now() + 3600000; // 1h
     await user.save();
 
-    const resetURL = `http://localhost:5173/reset-password/${token}`;
+    const resetURL = `https://tache-21-frontt.vercel.app/reset-password/${token}`;
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
