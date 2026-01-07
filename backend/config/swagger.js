@@ -10,7 +10,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:5173", // URL locale de ton backend
+        url: "http://banking-backend-rtsx.onrender.com", // URL locale de ton backend
       },
     ],
     components: {

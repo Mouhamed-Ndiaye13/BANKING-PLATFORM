@@ -17,7 +17,7 @@ export const getProfile = async (req, res) => {
 
     // Construction de l'URL complète de l'avatar
     const avatarUrl = user.avatar
-      ? `${process.env.SERVER_URL || "http://localhost:5000"}/${user.avatar.replace(/\\/g, "/")}`
+      ? `${process.env.SERVER_URL || "https://tache-21-frontt.vercel.app"}/${user.avatar.replace(/\\/g, "/")}`
       : null;
 
     // On renvoie uniquement les infos nécessaires au frontend
@@ -65,7 +65,7 @@ export const updateAvatar = async (req, res) => {
     await user.save();
 
     // Construit l'URL complète pour le frontend
-    const avatarUrl = `${process.env.SERVER_URL || "http://localhost:5000"}/${relativePath.replace(/\\/g, "/")}`;
+    const avatarUrl = `${process.env.SERVER_URL || "https://tache-21-frontt.vercel.app"}/${relativePath.replace(/\\/g, "/")}`;
 
     res.json({
       message: "Avatar mis à jour avec succès",

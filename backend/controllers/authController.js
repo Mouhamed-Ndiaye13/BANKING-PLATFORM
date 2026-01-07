@@ -125,68 +125,28 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validation des champs
     if (!email || !password) {
       return res.status(400).json({ message: "Email et mot de passe requis" });
     }
 
+    // Vérification de l'existence de l'utilisateur
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: "Identifiants invalides" });
     }
 
+    // Vérification du mot de passe
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Identifiants invalides" });
     }
 
-    // 2FA par email
-    if (user.twoFactorEnabled) {
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-      // On prépare les infos 2FA
-      user.email2FACode = await bcrypt.hash(code, 10);
-      user.email2FAExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
-      user.email2FATries = 0;
-
-      await user.save();
-
-      try {
-        // Tentative d'envoi de mail
-        await transporter.sendMail({
-          to: user.email,
-          subject: "Code de sécurité",
-          html: `
-            <h3>Code de connexion</h3>
-            <h1>${code}</h1>
-            <p>Expire dans 5 minutes</p>
-          `,
-        });
-
-        // Mail envoyé avec succès -> on demande la 2FA
-        return res.json({
-          twoFactorRequired: true,
-          userId: user._id,
-        });
-
-      } catch (emailError) {
-        console.error("Erreur envoi email 2FA:", emailError);
-
-        // Fallback : générer un token temporaire valable 5 minutes
-        const tempToken = generateToken(user._id, "5m"); // On suppose que generateToken accepte un paramètre d'expiration
-
-        return res.status(200).json({
-          message:
-            "Impossible d'envoyer le code de sécurité par email. Connexion temporaire accordée.",
-          tempToken,
-          twoFactorFallback: true,
-          userId: user._id,
-        });
-      }
-    }
-
-    // Si pas de 2FA, on renvoie le token classique
+    // Génération du token JWT
     const token = generateToken(user._id);
-    return res.json({ token });
+
+    // Réponse réussie
+    return res.json({ token, userId: user._id });
 
   } catch (error) {
     console.error("LOGIN ERROR:", error);
