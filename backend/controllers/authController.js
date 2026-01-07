@@ -61,7 +61,7 @@ export const register = async (req, res) => {
     ]);
 
         // Envoi email de confirmation
-    const verifyURL = `http://localhost:5173/verify-email/${emailToken}`;
+    const verifyURL = `https://tache-21-frontt.vercel.app/verify-email/${emailToken}`;
 
     await transporter.sendMail({
       to: email,
