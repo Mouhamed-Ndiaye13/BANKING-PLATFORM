@@ -120,58 +120,120 @@ export const confirmEmail = async (req, res) => {
 };
 
 // ------------------- LOGIN -------------------
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log("Req body:", req.body);
 
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email et mot de passe requis" });
+    }
 
     const user = await User.findOne({ email });
-    console.log("User trouvé:", user);
-
-    if (!user)
+    if (!user) {
       return res.status(401).json({ message: "Identifiants invalides" });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
+    if (!isMatch) {
       return res.status(401).json({ message: "Identifiants invalides" });
+    }
 
     // 2FA par email
     if (user.twoFactorEnabled) {
-        console.log("2FA activé pour l'utilisateur");
+      try {
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
+        user.email2FACode = await bcrypt.hash(code, 10);
+        user.email2FAExpires = Date.now() + 5 * 60 * 1000;
+        user.email2FATries = 0;
+        await user.save();
 
-      user.email2FACode = await bcrypt.hash(code, 10);
-      user.email2FAExpires = Date.now() + 5 * 60 * 1000;
-      user.email2FATries = 0;
+        // Envoi du mail
+        await transporter.sendMail({
+          to: user.email,
+          subject: "Code de sécurité",
+          html: `
+            <h3>Code de connexion</h3>
+            <h1>${code}</h1>
+            <p>Expire dans 5 minutes</p>
+          `,
+        });
 
-      await user.save();
-
-      await transporter.sendMail({
-        to: user.email,
-        subject: "Code de sécurité",
-        html: `
-          <h3>Code de connexion</h3>
-          <h1>${code}</h1>
-          <p>Expire dans 5 minutes</p>
-        `,
-      });
-
-      return res.json({
-        twoFactorRequired: true,
-        userId: user._id,
-      });
+        return res.json({
+          twoFactorRequired: true,
+          userId: user._id,
+        });
+      } catch (emailError) {
+        console.error("Erreur envoi email 2FA:", emailError);
+        return res.status(500).json({
+          message: "Impossible d'envoyer le code de sécurité. Réessayez plus tard.",
+        });
+      }
     }
 
+    // Si pas de 2FA, on renvoie le token directement
     const token = generateToken(user._id);
-    res.json({ token });
+    return res.json({ token });
 
   } catch (error) {
     console.error("LOGIN ERROR:", error);
-    res.status(500).json({ message: "Erreur serveur" });
+    return res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
+// export const login = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+//     console.log("Req body:", req.body);
+
+
+//     const user = await User.findOne({ email });
+//     console.log("User trouvé:", user);
+
+//     if (!user)
+//       return res.status(401).json({ message: "Identifiants invalides" });
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch)
+//       return res.status(401).json({ message: "Identifiants invalides" });
+
+//     // 2FA par email
+//     if (user.twoFactorEnabled) {
+//         console.log("2FA activé pour l'utilisateur");
+
+//       const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+//       user.email2FACode = await bcrypt.hash(code, 10);
+//       user.email2FAExpires = Date.now() + 5 * 60 * 1000;
+//       user.email2FATries = 0;
+
+//       await user.save();
+
+//       await transporter.sendMail({
+//         to: user.email,
+//         subject: "Code de sécurité",
+//         html: `
+//           <h3>Code de connexion</h3>
+//           <h1>${code}</h1>
+//           <p>Expire dans 5 minutes</p>
+//         `,
+//       });
+
+//       return res.json({
+//         twoFactorRequired: true,
+//         userId: user._id,
+//       });
+//     }
+
+//     const token = generateToken(user._id);
+//     res.json({ token });
+
+//   } catch (error) {
+//     console.error("LOGIN ERROR:", error);
+//     res.status(500).json({ message: "Erreur serveur" });
+//   }
+// };
 
 // ------------------- VERIFY EMAIL 2FA -------------------
 export const verifyEmail2FA = async (req, res) => {
