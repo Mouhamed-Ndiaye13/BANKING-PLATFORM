@@ -50,6 +50,7 @@ app.use(cors({
   },
   methods: ["GET", "POST", "PUT","PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
 
 // Middleware pour capturer les erreurs CORS et renvoyer un JSON
