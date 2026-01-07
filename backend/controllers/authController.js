@@ -93,6 +93,39 @@ export const register = async (req, res) => {
     return res.status(500).json({ message: "Erreur serveur" });
   }
 };
+// ---------- CREATE nouveau compte ----------
+export const createAccount = async (req, res) => {
+  return res.status(403).json({
+    message: "Les comptes sont créés automatiquement à l’inscription."
+  });
+};
+/* ================= CONFIRM EMAIL ================= */
+export const confirmEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const user = await User.findOne({
+      emailToken: token,
+      emailTokenExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Lien invalide ou expiré" });
+    }
+
+    user.isEmailVerified = true;
+    user.emailToken = null;
+    user.emailTokenExpires = null;
+
+    await user.save();
+
+    res.json({ message: "Compte activé avec succès" });
+
+  } catch (error) {
+    console.error("CONFIRM EMAIL ERROR:", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
 
 // ------------------- LOGIN -------------------
 
