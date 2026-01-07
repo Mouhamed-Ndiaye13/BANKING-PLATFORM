@@ -2,39 +2,38 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
 dotenv.config(); 
-//creation de transporteur
+
+// Création d’un seul transporteur global
 export const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.EMAIL_USER, // Gmail
+    pass: process.env.EMAIL_PASS, // App Password
   },
 });
-// ENVOYER email de confirmation de inscription 
- export const sendEmail = async ({ to, subject, html }) => {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
 
-  await transporter.sendMail({
-    from: `"BankReemi" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    html,
-  });
+// Fonction d’envoi d’email
+export const sendEmail = async ({ to, subject, html }) => {
+  try {
+    await transporter.sendMail({
+      from: `"BankReemi" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      html,
+    });
+    console.log(`Email envoyé à ${to}`);
+  } catch (err) {
+    console.error("Erreur envoi email :", err);
+    throw err;
+  }
 };
 
-// Vérification de la connexion
-transporter.verify((error, success) => {
-  if (error) {
-    console.log("Erreur transporteur Nodemailer :", error);
-  } else {
-    console.log("Nodemailer prêt à envoyer des emails !");
-  }
-});
+// Vérification facultative (local uniquement)
+if (process.env.NODE_ENV !== "production") {
+  transporter.verify((error, success) => {
+    if (error) console.log("Erreur transporteur Nodemailer :", error);
+    else console.log("Nodemailer prêt à envoyer des emails !");
+  });
+}
 
 export default transporter;

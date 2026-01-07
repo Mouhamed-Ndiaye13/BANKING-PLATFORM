@@ -10,7 +10,7 @@ import { transporter } from "../utils/mailer.js";
 
 // ------------------- REGISTER -------------------
 export const register = async (req, res) => {
-  console.time("register"); // 🟢 Démarre le timer
+  console.time("register");
 
   try {
     const { prenom, name, email, password, telephone, dateDeNaissance } = req.body;
@@ -26,9 +26,8 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: "Email déjà utilisé" });
     }
 
-    // ✅ Validation du numéro de téléphone
-    const cleanedPhone = telephone.replace(/\s+/g, ""); // supprime les espaces
-    const phoneNumber = parsePhoneNumberFromString(cleanedPhone, "SN"); // 'SN' pour Sénégal
+    // Validation du numéro de téléphone
+    const phoneNumber = parsePhoneNumberFromString(telephone);
     if (!phoneNumber || !phoneNumber.isValid()) {
       return res.status(400).json({ message: "Téléphone invalide ou incorrect." });
     }
@@ -54,8 +53,8 @@ export const register = async (req, res) => {
       role: "user",
       emailToken,
       emailTokenExpires: Date.now() + 1000 * 60 * 60, // 1h
-      email2FACode: await bcrypt.hash(otpCode, 10),   // code OTP hashé
-      email2FAExpires: Date.now() + 1000 * 60 * 15,   // 15 minutes
+      email2FACode: await bcrypt.hash(otpCode, 10),
+      email2FAExpires: Date.now() + 1000 * 60 * 15, // 15 min
       isVerified: false,
       twoFactorEnabled: true,
     });
@@ -67,10 +66,10 @@ export const register = async (req, res) => {
       { userId: user._id, type: "business", name: "Compte business", balance: 0 },
     ]);
 
-    // Envoi email de confirmation avec code OTP
-    const verifyURL = `https://tache-21-frontt.vercel.app/verify-email/${emailToken}`;
+    // Envoi email de confirmation avec OTP
+    const verifyURL = `${process.env.FRONTEND_URLS.split(",")[1]}/verify-email/${emailToken}`;
 
-    await transporter.sendMail({
+    await sendEmail({
       to: email,
       subject: "Confirmation de votre compte",
       html: `
@@ -82,7 +81,7 @@ export const register = async (req, res) => {
       `,
     });
 
-    console.timeEnd("register"); // ⏹ Arrête le timer
+    console.timeEnd("register");
     return res.status(201).json({
       message: "Compte créé avec succès. Vérifiez votre email pour le code de validation.",
       userId: user._id,
@@ -90,7 +89,7 @@ export const register = async (req, res) => {
 
   } catch (err) {
     console.error("REGISTER ERROR:", err);
-    console.timeEnd("register"); // ⏹ Arrête le timer
+    console.timeEnd("register");
     return res.status(500).json({ message: "Erreur serveur" });
   }
 };
