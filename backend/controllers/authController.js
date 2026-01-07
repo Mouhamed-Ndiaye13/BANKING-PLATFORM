@@ -5,117 +5,92 @@ import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { generateEmailOTP } from "../utils/otp.js";
 import { generateToken } from "../utils/generateToken.js";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { transporter } from "../utils/mailer.js";
+
 // ------------------- REGISTER -------------------
 export const register = async (req, res) => {
-    console.time("login"); // 🟢 Démarre le timer
+  console.time("register"); // 🟢 Démarre le timer
 
   try {
-    const { prenom, name, email, password, telephone, dateDeNaissance} = req.body;
+    const { prenom, name, email, password, telephone, dateDeNaissance } = req.body;
 
+    // Vérifier que tous les champs sont fournis
+    if (!prenom || !name || !email || !password || !telephone || !dateDeNaissance) {
+      return res.status(400).json({ message: "Tous les champs sont obligatoires" });
+    }
+
+    // Vérification si l'email existe déjà
     const exist = await User.findOne({ email });
-    console.timeEnd("login"); // ⏹ Arrête le timer avant de répondre
-
     if (exist) {
       return res.status(400).json({ message: "Email déjà utilisé" });
     }
 
+    // ✅ Validation du numéro de téléphone
+    const phoneNumber = parsePhoneNumberFromString(telephone);
+    if (!phoneNumber || !phoneNumber.isValid()) {
+      return res.status(400).json({ message: "Téléphone invalide ou incorrect." });
+    }
+    const formattedPhone = phoneNumber.number; // format E.164 (+221...)
+
+    // Hash du mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
-     //  GÉNÉRATION DU TOKEN EMAIL (OBLIGATOIRE)
+
+    // Génération du token email
     const emailToken = crypto.randomBytes(32).toString("hex");
-    // Création utilisateur
+
+    // Génération du code OTP pour validation par email (6 chiffres)
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Création de l'utilisateur
     const user = await User.create({
       prenom,
       name,
       email,
-      telephone,
-      dateDeNaissance,
       password: hashedPassword,
+      telephone: formattedPhone,
+      dateDeNaissance,
       role: "user",
       emailToken,
       emailTokenExpires: Date.now() + 1000 * 60 * 60, // 1h
-      isEmailVerified: false,
-       twoFactorEnabled: true
+      email2FACode: await bcrypt.hash(otpCode, 10),   // code OTP hashé
+      email2FAExpires: Date.now() + 1000 * 60 * 15,   // 15 minutes
+      isVerified: false,
+      twoFactorEnabled: true,
     });
 
-    //  Création AUTOMATIQUE des 3 comptes
-    const accounts = await Account.insertMany([
-      {
-        userId: user._id,
-        type: "courant",
-        name: "Compte courant",
-        balance: 0
-      },
-      {
-        userId: user._id,
-        type: "epargne",
-        name: "Compte épargne",
-        balance: 0
-      },
-      {
-        userId: user._id,
-        type: "business",
-        name: "Compte business",
-        balance: 0
-      }
+    // Création automatique des 3 comptes
+    await Account.insertMany([
+      { userId: user._id, type: "courant", name: "Compte courant", balance: 0 },
+      { userId: user._id, type: "epargne", name: "Compte épargne", balance: 0 },
+      { userId: user._id, type: "business", name: "Compte business", balance: 0 },
     ]);
 
-        // Envoi email de confirmation
+    // Envoi email de confirmation avec code OTP
     const verifyURL = `https://tache-21-frontt.vercel.app/verify-email/${emailToken}`;
 
     await transporter.sendMail({
       to: email,
       subject: "Confirmation de votre compte",
       html: `
-        <h3>Bienvenue ${name}</h3>
-        <p>Cliquez sur le lien ci-dessous pour activer votre compte :</p>
+        <h3>Bienvenue ${name} !</h3>
+        <p>Votre code de validation : <b>${otpCode}</b></p>
+        <p>Ou cliquez sur le lien ci-dessous pour activer votre compte :</p>
         <a href="${verifyURL}">${verifyURL}</a>
-        <p>Ce lien expire dans 1 heure</p>
-      `
+        <p>Le code expire dans 15 minutes et le lien dans 1 heure.</p>
+      `,
     });
-    res.status(201).json({
-      message: "Compte créé. Vérifiez votre email."
+
+    console.timeEnd("register"); // ⏹ Arrête le timer
+    return res.status(201).json({
+      message: "Compte créé avec succès. Vérifiez votre email pour le code de validation.",
+      userId: user._id,
     });
 
   } catch (err) {
     console.error("REGISTER ERROR:", err);
-    console.timeEnd("login"); // ⏹ Arrête le timer juste avant d’envoyer la réponse
-
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-};
-
-// ---------- CREATE nouveau compte ----------
-export const createAccount = async (req, res) => {
-  return res.status(403).json({
-    message: "Les comptes sont créés automatiquement à l’inscription."
-  });
-};
-/* ================= CONFIRM EMAIL ================= */
-export const confirmEmail = async (req, res) => {
-  try {
-    const { token } = req.params;
-
-    const user = await User.findOne({
-      emailToken: token,
-      emailTokenExpires: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      return res.status(400).json({ message: "Lien invalide ou expiré" });
-    }
-
-    user.isEmailVerified = true;
-    user.emailToken = null;
-    user.emailTokenExpires = null;
-
-    await user.save();
-
-    res.json({ message: "Compte activé avec succès" });
-
-  } catch (error) {
-    console.error("CONFIRM EMAIL ERROR:", error);
-    res.status(500).json({ message: "Erreur serveur" });
+    console.timeEnd("register"); // ⏹ Arrête le timer
+    return res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
