@@ -17,6 +17,8 @@ export const api = async (method, endpoint, data = null) => {
       },
     });
 
+    console.log("voici le token", token)
+
     return res.data;
   } catch (err) {
     console.error("API ERROR:", err.response?.data || err.message);
