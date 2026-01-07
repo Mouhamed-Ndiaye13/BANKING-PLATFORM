@@ -1,94 +1,96 @@
-
 import User from "../models/User.js";
 import Account from "../models/Account.js";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
-import { transporter } from "../utils/mailer.js";
+import crypto from "crypto";            
+import nodemailer from "nodemailer";
+import { generateEmailOTP } from "../utils/otp.js";
 import { generateToken } from "../utils/generateToken.js";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
-
-/* ===================== REGISTER ===================== */
+import { transporter } from "../utils/mailer.js";
+// ------------------- REGISTER -------------------
 export const register = async (req, res) => {
+    console.time("login"); // 🟢 Démarre le timer
+
   try {
-    const {
-      prenom,
-      name,
-      email,
-      password,
-      telephone,
-      dateDeNaissance,
-    } = req.body;
+    const { prenom, name, email, password, telephone, dateDeNaissance} = req.body;
 
-    // 1️⃣ Validation basique
-    if (!prenom || !name || !email || !password || !telephone) {
-      return res.status(400).json({ message: "Champs requis manquants" });
-    }
-
-    // 2️⃣ Validation téléphone (libphonenumber-js)
-    const phoneNumber = parsePhoneNumberFromString(telephone);
-    if (!phoneNumber || !phoneNumber.isValid()) {
-      return res
-        .status(400)
-        .json({ message: "Téléphone invalide ou incorrect." });
-    }
-
-    const formattedPhone = phoneNumber.number; // E.164
-
-    // 3️⃣ Vérifier email existant
     const exist = await User.findOne({ email });
+    console.timeEnd("login"); // ⏹ Arrête le timer avant de répondre
+
     if (exist) {
-      return res.status(409).json({ message: "Email déjà utilisé" });
+      return res.status(400).json({ message: "Email déjà utilisé" });
     }
 
-    // 4️⃣ Générer token email
+    const hashedPassword = await bcrypt.hash(password, 10);
+     //  GÉNÉRATION DU TOKEN EMAIL (OBLIGATOIRE)
     const emailToken = crypto.randomBytes(32).toString("hex");
-
-    // 5️⃣ Création utilisateur (PAS de hash ici, fait dans le model)
+    // Création utilisateur
     const user = await User.create({
       prenom,
       name,
       email,
-      telephone: formattedPhone,
-      dateDeNaissance: dateDeNaissance
-        ? new Date(dateDeNaissance)
-        : null,
-      password,
-      isEmailVerified: false,
+      telephone,
+      dateDeNaissance,
+      password: hashedPassword,
+      role: "user",
       emailToken,
       emailTokenExpires: Date.now() + 1000 * 60 * 60, // 1h
-      twoFactorEnabled: false,
+      isEmailVerified: false,
+       twoFactorEnabled: true
     });
 
-    // 6️⃣ Création automatique des comptes
-    await Account.insertMany([
-      { userId: user._id, type: "courant", name: "Compte courant", balance: 0 },
-      { userId: user._id, type: "epargne", name: "Compte épargne", balance: 0 },
-      { userId: user._id, type: "business", name: "Compte business", balance: 0 },
+    //  Création AUTOMATIQUE des 3 comptes
+    const accounts = await Account.insertMany([
+      {
+        userId: user._id,
+        type: "courant",
+        name: "Compte courant",
+        balance: 0
+      },
+      {
+        userId: user._id,
+        type: "epargne",
+        name: "Compte épargne",
+        balance: 0
+      },
+      {
+        userId: user._id,
+        type: "business",
+        name: "Compte business",
+        balance: 0
+      }
     ]);
 
-    // 7️⃣ Envoi email de confirmation
-    const verifyURL = `${process.env.FRONTEND_URL}/verify-email/${emailToken}`;
+        // Envoi email de confirmation
+    const verifyURL = `https://tache-21-frontt.vercel.app/verify-email/${emailToken}`;
 
     await transporter.sendMail({
       to: email,
       subject: "Confirmation de votre compte",
       html: `
-        <h3>Bienvenue ${prenom}</h3>
-        <p>Merci de confirmer votre compte bancaire.</p>
+        <h3>Bienvenue ${name}</h3>
+        <p>Cliquez sur le lien ci-dessous pour activer votre compte :</p>
         <a href="${verifyURL}">${verifyURL}</a>
-        <p>Ce lien expire dans 1 heure.</p>
-      `,
+        <p>Ce lien expire dans 1 heure</p>
+      `
+    });
+    res.status(201).json({
+      message: "Compte créé. Vérifiez votre email."
     });
 
-    return res.status(201).json({
-      message: "Compte créé. Vérifiez votre email pour l’activer.",
-    });
   } catch (err) {
     console.error("REGISTER ERROR:", err);
-    return res.status(500).json({ message: "Erreur serveur" });
+    console.timeEnd("login"); // ⏹ Arrête le timer juste avant d’envoyer la réponse
+
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
+// ---------- CREATE nouveau compte ----------
+export const createAccount = async (req, res) => {
+  return res.status(403).json({
+    message: "Les comptes sont créés automatiquement à l’inscription."
+  });
+};
 /* ================= CONFIRM EMAIL ================= */
 export const confirmEmail = async (req, res) => {
   try {
@@ -96,7 +98,7 @@ export const confirmEmail = async (req, res) => {
 
     const user = await User.findOne({
       emailToken: token,
-      emailTokenExpires: { $gt: Date.now() },
+      emailTokenExpires: { $gt: Date.now() }
     });
 
     if (!user) {
@@ -106,51 +108,46 @@ export const confirmEmail = async (req, res) => {
     user.isEmailVerified = true;
     user.emailToken = null;
     user.emailTokenExpires = null;
+
     await user.save();
 
-    return res.json({ message: "Compte activé avec succès" });
+    res.json({ message: "Compte activé avec succès" });
+
   } catch (error) {
     console.error("CONFIRM EMAIL ERROR:", error);
-    return res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
-/* ===================== LOGIN ===================== */
+// ------------------- LOGIN -------------------
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validation des champs
     if (!email || !password) {
       return res.status(400).json({ message: "Email et mot de passe requis" });
     }
 
+    // Vérification de l'existence de l'utilisateur
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: "Identifiants invalides" });
     }
 
-    if (!user.isEmailVerified) {
-      return res.status(403).json({
-        message: "Veuillez confirmer votre email avant de vous connecter",
-      });
-    }
-
-    const isMatch = await user.comparePassword(password);
+    // Vérification du mot de passe
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Identifiants invalides" });
     }
 
+    // Génération du token JWT
     const token = generateToken(user._id);
 
-    return res.json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        prenom: user.prenom,
-        email: user.email,
-      },
-    });
+    // Réponse réussie
+    return res.json({ token, userId: user._id });
+
   } catch (error) {
     console.error("LOGIN ERROR:", error);
     return res.status(500).json({ message: "Erreur serveur" });
