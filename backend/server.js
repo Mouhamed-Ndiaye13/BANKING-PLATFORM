@@ -32,25 +32,36 @@ const app = express();
 // CORS (WEB + MOBILE)
 // ==================
 const allowedOrigins = [
-  "http://localhost:3000",
-  "https://tache-21-frontt.vercel.app",
+  "http://localhost:3000",                   // Frontend local
+  "https://tache-21-frontt.vercel.app",     // Frontend Render / Vercel
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // React Native (pas d'origin)
+    // Postman / React Native (pas d'origin)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
+    console.warn("CORS blocked:", origin);
     return callback(new Error("Not allowed by CORS"));
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
+// Middleware pour capturer les erreurs CORS et renvoyer un JSON
+app.use((err, req, res, next) => {
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({ message: err.message });
+  }
+  next(err);
+});
+
+// ==================
+// Middleware
 // ==================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -104,9 +115,12 @@ app.get("/", (req, res) => {
 // ==================
 // MongoDB
 // ==================
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connecté ✔"))
-  .catch(err => console.error("MongoDB error :", err));
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("MongoDB connecté ✔"))
+.catch(err => console.error("MongoDB error :", err));
 
 // ==================
 // Start server
