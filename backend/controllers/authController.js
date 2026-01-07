@@ -27,7 +27,8 @@ export const register = async (req, res) => {
     }
 
     // ✅ Validation du numéro de téléphone
-    const phoneNumber = parsePhoneNumberFromString(telephone);
+    const cleanedPhone = telephone.replace(/\s+/g, ""); // supprime les espaces
+    const phoneNumber = parsePhoneNumberFromString(cleanedPhone, "SN"); // 'SN' pour Sénégal
     if (!phoneNumber || !phoneNumber.isValid()) {
       return res.status(400).json({ message: "Téléphone invalide ou incorrect." });
     }
