@@ -2,10 +2,10 @@ import User from "../models/User.js";
 import Account from "../models/Account.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";            
-import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { sendEmail } from "../utils/sendEmail.js"; // SendGrid
 import { generateToken } from "../utils/generateToken.js";
 
+// ------------------- REGISTER -------------------
 // ------------------- REGISTER -------------------
 export const register = async (req, res) => {
   console.time("register");
@@ -17,13 +17,12 @@ export const register = async (req, res) => {
     }
 
     const exist = await User.findOne({ email });
-    if (exist) return res.status(400).json({ message: "Email déjà utilisé" });
-
-    const phoneNumber = parsePhoneNumberFromString(telephone);
-    if (!phoneNumber || !phoneNumber.isValid()) {
-      return res.status(400).json({ message: "Téléphone invalide ou incorrect." });
+    if (exist) {
+      return res.status(400).json({ message: "Email déjà utilisé" });
     }
-    const formattedPhone = phoneNumber.number;
+
+    // ✅ Téléphone simple (on enlève juste les espaces)
+    const cleanPhone = telephone.replace(/\s+/g, "");
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const emailToken = crypto.randomBytes(32).toString("hex");
@@ -34,7 +33,7 @@ export const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      telephone: formattedPhone,
+      telephone: cleanPhone,
       dateDeNaissance,
       role: "user",
       emailToken,
@@ -45,7 +44,7 @@ export const register = async (req, res) => {
       twoFactorEnabled: true,
     });
 
-    // Création automatique des 3 comptes
+    // Création automatique des comptes
     await Account.insertMany([
       { userId: user._id, type: "courant", name: "Compte courant", balance: 0 },
       { userId: user._id, type: "epargne", name: "Compte épargne", balance: 0 },
@@ -60,15 +59,15 @@ export const register = async (req, res) => {
       html: `
         <h3>Bienvenue ${name} !</h3>
         <p>Votre code de validation : <b>${otpCode}</b></p>
-        <p>Ou cliquez sur le lien ci-dessous pour activer votre compte :</p>
+        <p>Ou cliquez sur le lien ci-dessous :</p>
         <a href="${verifyURL}">${verifyURL}</a>
-        <p>Le code expire dans 15 minutes et le lien dans 1 heure.</p>
+        <p>Le code expire dans 15 minutes.</p>
       `,
     });
 
     console.timeEnd("register");
     return res.status(201).json({
-      message: "Compte créé avec succès. Vérifiez votre email pour le code de validation.",
+      message: "Compte créé avec succès. Vérifiez votre email.",
       userId: user._id,
     });
 
