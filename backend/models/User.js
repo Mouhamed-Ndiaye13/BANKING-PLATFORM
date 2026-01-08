@@ -1,53 +1,50 @@
-// models/User.js
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
 const UserSchema = new mongoose.Schema(
   {
-    // ===================
-    // Infos utilisateur
-    // ===================
     name: { type: String, required: true },
     prenom: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    telephone: { type: String, required: true },
-    dateDeNaissance: { type: Date },
 
-    password: { type: String }, // null pour Google OAuth
-    avatar: { type: String, default: null },
+    telephone: {
+      type: String,
+      unique: true,
+      sparse: true, // autorise null pour Google
+    },
 
-    // ===================
-    // Validation email (INSCRIPTION)
-    // ===================
-    isEmailConfirmed: {
+    email: {
+      type: String,
+      unique: true,
+      sparse: true, // Google fournit l’email
+    },
+
+    password: {
+      type: String,
+      default: null, // Google = pas de mot de passe
+    },
+
+    avatar: {
+      type: String,
+      default: null,
+    },
+
+    googleId: {
+      type: String,
+      default: null,
+      unique: true,
+      sparse: true,
+    },
+
+    blocked: {
       type: Boolean,
       default: false,
     },
-
-    emailValidationCode: String,
-    emailValidationExpires: Date,
-
-    // ===================
-    // Sécurité
-    // ===================
-    blocked: { type: Boolean, default: false },
-
-    // ===================
-    // Reset password
-    // ===================
-    resetToken: String,
-    resetTokenExpire: Date,
-
-    // ===================
-    // Google OAuth
-    // ===================
-    googleId: { type: String, default: null },
   },
   { timestamps: true }
 );
 
 // ===================
-// Hash du mot de passe
+// Hash password
 // ===================
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password") || !this.password) return next();
@@ -56,10 +53,10 @@ UserSchema.pre("save", async function (next) {
 });
 
 // ===================
-// Comparaison password
+// Compare password
 // ===================
 UserSchema.methods.comparePassword = async function (enteredPassword) {
-  if (!enteredPassword || !this.password) return false;
+  if (!this.password) return false;
   return bcrypt.compare(enteredPassword, this.password);
 };
 
@@ -67,22 +64,47 @@ UserSchema.methods.comparePassword = async function (enteredPassword) {
 // Google OAuth helper
 // ===================
 UserSchema.statics.findOrCreateGoogleUser = async function (profile) {
-  const email = profile.email || profile?.emails?.[0]?.value;
-  if (!email) throw new Error("Google profile sans email");
+  // Google fournit toujours un ID
+  const googleId = profile.sub || profile.id;
 
-  let user = await this.findOne({ email });
+  if (!googleId) {
+    throw new Error("Google profile invalide");
+  }
+
+  // 1️⃣ Recherche par googleId
+  let user = await this.findOne({ googleId });
   if (user) return user;
 
+  // 2️⃣ Récupérer infos Google
+  const email = profile.email || profile?.emails?.[0]?.value || null;
+  const prenom = profile.given_name || profile.name?.givenName || "Google";
+  const name =
+    profile.family_name ||
+    profile.name?.familyName ||
+    "Utilisateur";
+
+  // 3️⃣ Recherche par email (si existe)
+  if (email) {
+    user = await this.findOne({ email });
+    if (user) {
+      user.googleId = googleId;
+      await user.save();
+      return user;
+    }
+  }
+
+  // 4️⃣ Création utilisateur Google
   return this.create({
-    name: profile.name || "Utilisateur Google",
-    prenom: profile.given_name || "Google",
+    name,
+    prenom,
     email,
-    avatar: profile.picture || null,
-    googleId: profile.sub || profile.id,
+    googleId,
     password: null,
-    telephone: "N/A",
-    isEmailConfirmed: true, // Google = email déjà validé
+    telephone: null,
+    avatar: profile.picture || null,
+    isEmailConfirmed: true, // Google = déjà validé
   });
 };
+
 
 export default mongoose.model("User", UserSchema);

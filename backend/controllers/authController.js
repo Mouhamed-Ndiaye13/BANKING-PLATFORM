@@ -12,78 +12,65 @@ export const register = async (req, res) => {
     const {
       prenom,
       name,
-      email,
-      password,
       telephone,
+      password,
       dateDeNaissance,
     } = req.body;
 
-    // 1️⃣ Validation minimale
-    if (!prenom || !name || !email || !password || !telephone) {
-      return res.status(400).json({
-        message: "Tous les champs obligatoires doivent être remplis",
-      });
+    // 1️⃣ Vérification champs obligatoires
+    if (!prenom || !name || !telephone || !password || !dateDeNaissance) {
+      return res.status(400).json({ message: "Champs obligatoires manquants" });
     }
 
-    // 2️⃣ Vérifier email existant
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({
-        message: "Cet email est déjà utilisé",
-      });
+    // 2️⃣ Normalisation téléphone (Sénégal)
+    const phoneNumber = parsePhoneNumberFromString(telephone, "SN");
+
+    if (!phoneNumber || !phoneNumber.isValid()) {
+      return res.status(400).json({ message: "Téléphone invalide" });
     }
 
-    // 3️⃣ Hash password
+    const phoneFormatted = phoneNumber.number; // +221763243938
+
+    // 3️⃣ Vérifier si utilisateur existe
+    const userExist = await User.findOne({ telephone: phoneFormatted });
+    if (userExist) {
+      return res.status(409).json({ message: "Numéro déjà utilisé" });
+    }
+
+    // 4️⃣ Hash mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4️⃣ Créer utilisateur
+    // 5️⃣ Création utilisateur
     const user = await User.create({
       prenom,
       name,
-      email,
+      telephone: phoneFormatted,
       password: hashedPassword,
-      telephone,
       dateDeNaissance,
-      isVerified: true, // ✅ direct
     });
 
-    // 5️⃣ Créer compte bancaire
-    const account = await Account.create({
+    // 6️⃣ Création compte bancaire
+    await Account.create({
       user: user._id,
       balance: 0,
       currency: "XOF",
-      status: "ACTIVE",
     });
 
-    // 6️⃣ Générer token JWT
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_USER_SECRET,
-      { expiresIn: "7d" }
-    );
-
     // 7️⃣ Réponse OK
-    return res.status(201).json({
+    res.status(201).json({
       message: "Inscription réussie",
-      token,
+      token: generateToken(user._id),
       user: {
         id: user._id,
         prenom: user.prenom,
         name: user.name,
-        email: user.email,
         telephone: user.telephone,
       },
-      account: {
-        id: account._id,
-        balance: account.balance,
-        currency: account.currency,
-      },
     });
+
   } catch (error) {
-    console.error("REGISTER ERROR:", error);
-    return res.status(500).json({
-      message: "Erreur serveur",
-    });
+    console.error("REGISTER ERROR :", error);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
