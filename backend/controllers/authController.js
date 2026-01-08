@@ -4,79 +4,105 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";            
 import { sendEmail } from "../utils/sendEmail.js"; // SendGrid
 import { generateToken } from "../utils/generateToken.js";
+import admin from "firebase-admin"; // Pour vérifier le token Google
 
-// ------------------- REGISTER -------------------
-
-// ------------------- REGISTER -------------------
+// ------------------- INSCRIPTION SIMPLE -------------------
 export const register = async (req, res) => {
   try {
     const { prenom, name, email, password, telephone, dateDeNaissance } = req.body;
 
-    if (!prenom || !name || !email || !password || !telephone || !dateDeNaissance) {
+    if (!prenom || !name || !email || !password || !telephone || !dateDeNaissance)
       return res.status(400).json({ message: "Tous les champs sont requis" });
-    }
 
     // Vérifier si l'utilisateur existe déjà
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email déjà utilisé" });
-    }
+    if (existingUser) return res.status(400).json({ message: "Email déjà utilisé" });
 
-    // Validation simple du téléphone Sénégalais (7XXXXXXXX)
-    const phoneRegex = /^(7[05678]\d{7})$/;
-    if (!phoneRegex.test(telephone)) {
-      return res.status(400).json({ message: "Numéro de téléphone invalide" });
-    }
-
-    // Hash du mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Création de l'utilisateur
+    // Création utilisateur
     const user = await User.create({
       prenom,
       name,
       email,
-      password: hashedPassword,
+      password, // hash automatique via pre-save
       telephone,
       dateDeNaissance,
     });
 
-    return res.status(201).json({
-      message: "Utilisateur créé avec succès",
-      user: { id: user._id, prenom, name, email },
-    });
+    const token = generateToken(user._id);
 
+    res.status(201).json({
+      message: "Inscription réussie",
+      token,
+      user: {
+        id: user._id,
+        prenom: user.prenom,
+        name: user.name,
+        email: user.email,
+      },
+    });
   } catch (err) {
     console.error("REGISTER ERROR:", err);
-    return res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
-// ------------------- LOGIN -------------------
+// ------------------- LOGIN CLASSIQUE -------------------
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    if (!email || !password) {
+    if (!email || !password)
       return res.status(400).json({ message: "Email et mot de passe requis" });
-    }
 
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: "Identifiants invalides" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ message: "Identifiants invalides" });
 
-    // Génération du token JWT
     const token = generateToken(user._id);
 
-    return res.json({
+    res.json({
+      message: "Connexion réussie",
       token,
       user: { id: user._id, prenom: user.prenom, name: user.name, email: user.email },
     });
   } catch (err) {
     console.error("LOGIN ERROR:", err);
-    return res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// ------------------- LOGIN GOOGLE VIA FIREBASE -------------------
+export const loginWithGoogle = async (req, res) => {
+  try {
+    const { firebaseToken } = req.body;
+    if (!firebaseToken) return res.status(400).json({ message: "Firebase token requis" });
+
+    // Vérifier le token auprès de Firebase
+    const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
+
+    const profile = {
+      sub: decodedToken.uid,
+      email: decodedToken.email,
+      name: decodedToken.name || "Utilisateur",
+      given_name: decodedToken.given_name || "Google",
+      family_name: decodedToken.family_name || "Utilisateur",
+      picture: decodedToken.picture || null,
+    };
+
+    // Crée ou récupère l'utilisateur dans MongoDB
+    const user = await User.findOrCreateGoogleUser(profile);
+
+    const token = generateToken(user._id);
+
+    res.json({
+      message: "Connexion Google réussie",
+      token,
+      user: { id: user._id, prenom: user.prenom, name: user.name, email: user.email },
+    });
+  } catch (err) {
+    console.error("GOOGLE LOGIN ERROR:", err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 // ------------------- CONFIRM EMAIL -------------------
