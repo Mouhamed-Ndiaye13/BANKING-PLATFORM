@@ -24,7 +24,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      default: null,
+      default: undefined, // IMPORTANT
     },
 
     email: {
@@ -47,9 +47,7 @@ const UserSchema = new mongoose.Schema(
 
     googleId: {
       type: String,
-      unique: true,
-      sparse: true,
-      default: null,
+      default: undefined, // ❗ CRITIQUE (pas null)
     },
 
     isVerified: {
@@ -75,30 +73,57 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ===================
-// Hash password
-// ===================
+/* ===========================
+   INDEXES SÉCURISÉS
+=========================== */
+
+// Google ID unique seulement si présent
+UserSchema.index(
+  { googleId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      googleId: { $type: "string" },
+    },
+  }
+);
+
+// Téléphone unique seulement si présent
+UserSchema.index(
+  { telephone: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      telephone: { $type: "string" },
+    },
+  }
+);
+
+/* ===========================
+   HASH PASSWORD
+=========================== */
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password") || !this.password) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-// ===================
-// Compare password
-// ===================
+/* ===========================
+   COMPARE PASSWORD
+=========================== */
 UserSchema.methods.comparePassword = async function (enteredPassword) {
   if (!this.password) return false;
   return bcrypt.compare(enteredPassword, this.password);
 };
 
-// ===================
-// Google OAuth helper
-// ===================
+/* ===========================
+   GOOGLE OAUTH
+=========================== */
 UserSchema.statics.findOrCreateGoogleUser = async function (profile) {
   const googleId = profile.sub || profile.id;
   if (!googleId) throw new Error("Google profile invalide");
 
+  // 1️⃣ Recherche par Google ID
   let user = await this.findOne({ googleId });
   if (user) return user;
 
@@ -106,6 +131,7 @@ UserSchema.statics.findOrCreateGoogleUser = async function (profile) {
   const prenom = profile.given_name || "Google";
   const name = profile.family_name || "Utilisateur";
 
+  // 2️⃣ Si email existe déjà → lier Google
   if (email) {
     user = await this.findOne({ email });
     if (user) {
@@ -116,13 +142,14 @@ UserSchema.statics.findOrCreateGoogleUser = async function (profile) {
     }
   }
 
+  // 3️⃣ Création nouvel utilisateur Google
   return this.create({
     name,
     prenom,
     email,
     googleId,
     password: null,
-    telephone: null,
+    telephone: undefined,
     avatar: profile.picture || null,
     isVerified: true,
   });
