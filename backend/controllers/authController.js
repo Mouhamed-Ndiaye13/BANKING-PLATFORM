@@ -46,7 +46,7 @@ export const register = async (req, res) => {
       name,
       telephone: phoneFormatted,
       password: hashedPassword,
-      dateDeNaissance,
+      dateDeNaissance: new Date(req.body.dateDeNaissance) // force le format
     });
 
     // 6️⃣ Création compte bancaire
