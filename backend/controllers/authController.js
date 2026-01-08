@@ -18,6 +18,12 @@ export const register = async (req, res) => {
       dateDeNaissance,
     } = req.body;
 
+    // 🔹 Vérification existant
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email déjà utilisé" });
+    }
+
     // Crée l'utilisateur
     const user = await User.create({
       prenom,
@@ -29,16 +35,16 @@ export const register = async (req, res) => {
       isVerified: true,
     });
 
-    // ✅ Création des 3 comptes automatiquement
+    // 🔹 Création des 3 comptes automatiquement
     const accountTypes = ["courant", "epargne", "business"];
 
     const accounts = await Promise.all(
-      accountTypes.map((type, index) =>
+      accountTypes.map((type) =>
         Account.create({
           userId: user._id,
           name: `${user.prenom} ${user.name}`,
           type,
-          isDefault: type === "courant", // courant = compte principal
+          isDefault: type === "courant",
         })
       )
     );
@@ -46,10 +52,23 @@ export const register = async (req, res) => {
     res.status(201).json({
       message: "Inscription réussie",
       userId: user._id,
-      accounts: accounts.map(a => ({ id: a._id, type: a.type, accountNumber: a.accountNumber })),
+      accounts: accounts.map((a) => ({
+        id: a._id,
+        type: a.type,
+        accountNumber: a.accountNumber,
+      })),
     });
   } catch (error) {
-    console.error(error);
+    console.error("REGISTER ERROR:", error);
+
+    // 🔹 Gestion de duplication Mongo
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: `Valeur déjà utilisée: ${Object.keys(error.keyValue).join(", ")}`,
+        error: error.keyValue,
+      });
+    }
+
     res.status(500).json({
       message: "Erreur serveur",
       error: error.message,
