@@ -7,7 +7,6 @@ import { generateToken } from "../utils/generateToken.js";
 import admin from "firebase-admin"; // Pour vérifier le token Google
 
 // ------------------- INSCRIPTION SIMPLE -------------------
-// ------------------- REGISTER -------------------
 export const register = async (req, res) => {
   try {
     const {
@@ -19,31 +18,7 @@ export const register = async (req, res) => {
       dateDeNaissance,
     } = req.body;
 
-    if (
-      !prenom ||
-      !name ||
-      !email ||
-      !password ||
-      !telephone ||
-      !dateDeNaissance
-    ) {
-      return res.status(400).json({
-        message: "Tous les champs sont requis",
-      });
-    }
-
-    const existingUser = await User.findOne({
-      $or: [{ email }, { telephone }],
-    });
-
-    if (existingUser) {
-      return res.status(400).json({
-        message: "Email ou téléphone déjà utilisé",
-      });
-    }
-
-    const emailToken = crypto.randomBytes(32).toString("hex");
-
+    // Crée l'utilisateur
     const user = await User.create({
       prenom,
       name,
@@ -51,40 +26,33 @@ export const register = async (req, res) => {
       password,
       telephone,
       dateDeNaissance,
-      emailToken,
-      emailTokenExpires: Date.now() + 24 * 60 * 60 * 1000, // 24h
-      isVerified: false,
+      isVerified: true,
     });
 
-    // Création compte bancaire
-    await Account.create({
-      user: user._id,
-      balance: 0,
-      currency: "XOF",
-    });
+    // ✅ Création des 3 comptes automatiquement
+    const accountTypes = ["courant", "epargne", "business"];
 
-    const confirmURL = `${process.env.FRONTEND_URLS.split(",")[0]}/confirm-email/${emailToken}`;
-
-    await sendEmail({
-      to: email,
-      subject: "Confirmation de votre compte",
-      html: `
-        <h3>Bienvenue ${prenom}</h3>
-        <p>Veuillez confirmer votre compte :</p>
-        <a href="${confirmURL}">${confirmURL}</a>
-        <p>Ce lien expire dans 24 heures.</p>
-      `,
-    });
+    const accounts = await Promise.all(
+      accountTypes.map((type, index) =>
+        Account.create({
+          userId: user._id,
+          name: `${user.prenom} ${user.name}`,
+          type,
+          isDefault: type === "courant", // courant = compte principal
+        })
+      )
+    );
 
     res.status(201).json({
-      message: "Inscription réussie. Vérifiez votre email.",
+      message: "Inscription réussie",
       userId: user._id,
+      accounts: accounts.map(a => ({ id: a._id, type: a.type, accountNumber: a.accountNumber })),
     });
-  } catch (err) {
-    console.error("REGISTER ERROR:", err);
+  } catch (error) {
+    console.error(error);
     res.status(500).json({
       message: "Erreur serveur",
-      error: err.message,
+      error: error.message,
     });
   }
 };
@@ -120,7 +88,7 @@ export const loginWithGoogle = async (req, res) => {
     const { firebaseToken } = req.body;
     if (!firebaseToken) return res.status(400).json({ message: "Firebase token requis" });
 
-    // Vérifier le token auprès de Firebase
+    // Vérifie le token auprès de Firebase
     const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
 
     const profile = {
@@ -133,18 +101,48 @@ export const loginWithGoogle = async (req, res) => {
     };
 
     // Crée ou récupère l'utilisateur dans MongoDB
-    const user = await User.findOrCreateGoogleUser(profile);
+    let user = await User.findOrCreateGoogleUser(profile);
 
+    // 🔹 Vérifie s’il a déjà des comptes
+    let accounts = await Account.find({ userId: user._id });
+    if (accounts.length === 0) {
+      // Création des 3 comptes automatiquement
+      const accountTypes = ["courant", "épargne", "business"];
+
+      accounts = await Promise.all(
+        accountTypes.map((type) =>
+          Account.create({
+            userId: user._id,
+            name: `${user.prenom} ${user.name}`,
+            type,
+            isDefault: type === "courant",
+          })
+        )
+      );
+    }
+
+    // Génération du token JWT
     const token = generateToken(user._id);
 
     res.json({
       message: "Connexion Google réussie",
       token,
-      user: { id: user._id, prenom: user.prenom, name: user.name, email: user.email },
+      user: {
+        id: user._id,
+        prenom: user.prenom,
+        name: user.name,
+        email: user.email,
+      },
+      accounts: accounts.map(a => ({
+        id: a._id,
+        type: a.type,
+        accountNumber: a.accountNumber,
+        balance: a.balance,
+      })),
     });
   } catch (err) {
     console.error("GOOGLE LOGIN ERROR:", err);
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
 };
 // ------------------- CONFIRM EMAIL -------------------

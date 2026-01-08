@@ -23,18 +23,28 @@ const AccountSchema = new mongoose.Schema(
       required: true,
     },
 
-    name: { type: String, required: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     accountNumber: {
       type: String,
       unique: true,
-      required: true,
-      length: 16,
+      minlength: 16,
+      maxlength: 16,
     },
 
-    currency: { type: String, default: "FCFA" },
+    currency: {
+      type: String,
+      default: "FCFA",
+    },
 
-    balance: { type: Number, default: 0 },
+    balance: {
+      type: Number,
+      default: 0,
+    },
 
     isDefault: {
       type: Boolean,
@@ -44,7 +54,7 @@ const AccountSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// 🔁 Génération automatique du numéro (unique)
+// 🔁 Génération automatique du numéro
 AccountSchema.pre("validate", async function (next) {
   if (!this.accountNumber) {
     let number;
@@ -62,5 +72,4 @@ AccountSchema.pre("validate", async function (next) {
   next();
 });
 
-const Account = mongoose.model("Account", AccountSchema);
-export default Account;
+export default mongoose.model("Account", AccountSchema);
