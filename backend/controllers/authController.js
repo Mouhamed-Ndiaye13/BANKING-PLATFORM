@@ -6,75 +6,84 @@ import { sendEmail } from "../utils/sendEmail.js"; // SendGrid
 import { generateToken } from "../utils/generateToken.js";
 
 // ------------------- REGISTER -------------------
-// ------------------- REGISTER -------------------
+// ---------------- REGISTER ----------------
 export const register = async (req, res) => {
-  console.time("register");
   try {
-    const { prenom, name, email, password, telephone, dateDeNaissance } = req.body;
+    const {
+      prenom,
+      name,
+      email,
+      password,
+      telephone,
+      dateDeNaissance,
+    } = req.body;
 
-    if (!prenom || !name || !email || !password || !telephone || !dateDeNaissance) {
-      return res.status(400).json({ message: "Tous les champs sont obligatoires" });
+    // 1️⃣ Validation minimale
+    if (!prenom || !name || !email || !password || !telephone) {
+      return res.status(400).json({
+        message: "Tous les champs obligatoires doivent être remplis",
+      });
     }
 
-    const exist = await User.findOne({ email });
-    if (exist) {
-      return res.status(400).json({ message: "Email déjà utilisé" });
+    // 2️⃣ Vérifier email existant
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({
+        message: "Cet email est déjà utilisé",
+      });
     }
 
-    // ✅ Téléphone simple (on enlève juste les espaces)
-    const cleanPhone = telephone.replace(/\s+/g, "");
-
+    // 3️⃣ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const emailToken = crypto.randomBytes(32).toString("hex");
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
+    // 4️⃣ Créer utilisateur
     const user = await User.create({
       prenom,
       name,
       email,
       password: hashedPassword,
-      telephone: cleanPhone,
+      telephone,
       dateDeNaissance,
-      role: "user",
-      emailToken,
-      emailTokenExpires: Date.now() + 1000 * 60 * 60, // 1h
-      email2FACode: await bcrypt.hash(otpCode, 10),
-      email2FAExpires: Date.now() + 1000 * 60 * 15, // 15 min
-      isVerified: false,
-      twoFactorEnabled: true,
+      isVerified: true, // ✅ direct
     });
 
-    // Création automatique des comptes
-    await Account.insertMany([
-      { userId: user._id, type: "courant", name: "Compte courant", balance: 0 },
-      { userId: user._id, type: "epargne", name: "Compte épargne", balance: 0 },
-      { userId: user._id, type: "business", name: "Compte business", balance: 0 },
-    ]);
-
-    const verifyURL = `${process.env.FRONTEND_URLS.split(",")[1]}/verify-email/${emailToken}`;
-
-    await sendEmail({
-      to: email,
-      subject: "Confirmation de votre compte",
-      html: `
-        <h3>Bienvenue ${name} !</h3>
-        <p>Votre code de validation : <b>${otpCode}</b></p>
-        <p>Ou cliquez sur le lien ci-dessous :</p>
-        <a href="${verifyURL}">${verifyURL}</a>
-        <p>Le code expire dans 15 minutes.</p>
-      `,
+    // 5️⃣ Créer compte bancaire
+    const account = await Account.create({
+      user: user._id,
+      balance: 0,
+      currency: "XOF",
+      status: "ACTIVE",
     });
 
-    console.timeEnd("register");
+    // 6️⃣ Générer token JWT
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_USER_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // 7️⃣ Réponse OK
     return res.status(201).json({
-      message: "Compte créé avec succès. Vérifiez votre email.",
-      userId: user._id,
+      message: "Inscription réussie",
+      token,
+      user: {
+        id: user._id,
+        prenom: user.prenom,
+        name: user.name,
+        email: user.email,
+        telephone: user.telephone,
+      },
+      account: {
+        id: account._id,
+        balance: account.balance,
+        currency: account.currency,
+      },
     });
-
-  } catch (err) {
-    console.error("REGISTER ERROR:", err);
-    console.timeEnd("register");
-    return res.status(500).json({ message: "Erreur serveur" });
+  } catch (error) {
+    console.error("REGISTER ERROR:", error);
+    return res.status(500).json({
+      message: "Erreur serveur",
+    });
   }
 };
 
