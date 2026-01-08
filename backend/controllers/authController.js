@@ -79,6 +79,28 @@ export const login = async (req, res) => {
     return res.status(500).json({ message: "Erreur serveur" });
   }
 };
+// ------------------- CONFIRM EMAIL -------------------
+export const confirmEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const user = await User.findOne({
+      emailToken: token,
+      emailTokenExpires: { $gt: Date.now() }
+    });
+    if (!user) return res.status(400).json({ message: "Lien invalide ou expiré" });
+
+    user.isVerified = true;
+    user.emailToken = null;
+    user.emailTokenExpires = null;
+    await user.save();
+
+    res.json({ message: "Compte activé avec succès" });
+  } catch (err) {
+    console.error("CONFIRM EMAIL ERROR:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
 
 // ------------------- VERIFY EMAIL 2FA -------------------
 export const verifyEmail2FA = async (req, res) => {
