@@ -6,8 +6,8 @@ import { sendEmail } from "../utils/sendEmail.js"; // SendGrid
 import { generateToken } from "../utils/generateToken.js";
 
 // ------------------- REGISTER -------------------
-// ---------------- REGISTER ----------------
 
+// ------------------- REGISTER -------------------
 export const register = async (req, res) => {
   try {
     const { prenom, name, email, password, telephone, dateDeNaissance } = req.body;
@@ -22,7 +22,7 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: "Email déjà utilisé" });
     }
 
-    // Validation simple du téléphone pour le Sénégal (ex: 7XXXXXXXX)
+    // Validation simple du téléphone Sénégalais (7XXXXXXXX)
     const phoneRegex = /^(7[05678]\d{7})$/;
     if (!phoneRegex.test(telephone)) {
       return res.status(400).json({ message: "Numéro de téléphone invalide" });
@@ -37,7 +37,7 @@ export const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      telephone, // on garde tel quel
+      telephone,
       dateDeNaissance,
     });
 
@@ -52,33 +52,14 @@ export const register = async (req, res) => {
   }
 };
 
-// ------------------- CONFIRM EMAIL -------------------
-export const confirmEmail = async (req, res) => {
-  try {
-    const { token } = req.params;
-    const user = await User.findOne({
-      emailToken: token,
-      emailTokenExpires: { $gt: Date.now() }
-    });
-    if (!user) return res.status(400).json({ message: "Lien invalide ou expiré" });
-
-    user.isVerified = true;
-    user.emailToken = null;
-    user.emailTokenExpires = null;
-    await user.save();
-
-    res.json({ message: "Compte activé avec succès" });
-  } catch (err) {
-    console.error("CONFIRM EMAIL ERROR:", err);
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-};
-
 // ------------------- LOGIN -------------------
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: "Email et mot de passe requis" });
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email et mot de passe requis" });
+    }
 
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: "Identifiants invalides" });
@@ -86,8 +67,13 @@ export const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: "Identifiants invalides" });
 
+    // Génération du token JWT
     const token = generateToken(user._id);
-    return res.json({ token, userId: user._id });
+
+    return res.json({
+      token,
+      user: { id: user._id, prenom: user.prenom, name: user.name, email: user.email },
+    });
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     return res.status(500).json({ message: "Erreur serveur" });
