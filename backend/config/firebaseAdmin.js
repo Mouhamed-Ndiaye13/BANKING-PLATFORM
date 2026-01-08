@@ -1,14 +1,16 @@
 import admin from "firebase-admin";
 
-// Remplace les \n par de vrais retours à la ligne
-const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-
-// Vérification des variables
-if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !privateKey) {
+if (
+  !process.env.FIREBASE_PROJECT_ID ||
+  !process.env.FIREBASE_CLIENT_EMAIL ||
+  !process.env.FIREBASE_PRIVATE_KEY
+) {
   throw new Error("Les variables d'environnement Firebase ne sont pas définies !");
 }
 
-// Initialisation sécurisée
+// Remplace les \n par de vrais retours à la ligne
+const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n");
+
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -19,6 +21,4 @@ if (!admin.apps.length) {
   });
 }
 
-export const auth = admin.auth();
-export const db = admin.firestore();
 export default admin;
