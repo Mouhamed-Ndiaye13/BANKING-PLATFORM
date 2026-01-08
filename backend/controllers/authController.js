@@ -7,45 +7,87 @@ import { generateToken } from "../utils/generateToken.js";
 import admin from "firebase-admin"; // Pour vérifier le token Google
 
 // ------------------- INSCRIPTION SIMPLE -------------------
+// ------------------- REGISTER -------------------
 export const register = async (req, res) => {
   try {
-    const { prenom, name, email, password, telephone, dateDeNaissance } = req.body;
+    const {
+      prenom,
+      name,
+      email,
+      password,
+      telephone,
+      dateDeNaissance,
+    } = req.body;
 
-    if (!prenom || !name || !email || !password || !telephone || !dateDeNaissance)
-      return res.status(400).json({ message: "Tous les champs sont requis" });
+    if (
+      !prenom ||
+      !name ||
+      !email ||
+      !password ||
+      !telephone ||
+      !dateDeNaissance
+    ) {
+      return res.status(400).json({
+        message: "Tous les champs sont requis",
+      });
+    }
 
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: "Email déjà utilisé" });
+    const existingUser = await User.findOne({
+      $or: [{ email }, { telephone }],
+    });
 
-    // Création utilisateur
+    if (existingUser) {
+      return res.status(400).json({
+        message: "Email ou téléphone déjà utilisé",
+      });
+    }
+
+    const emailToken = crypto.randomBytes(32).toString("hex");
+
     const user = await User.create({
       prenom,
       name,
       email,
-      password, // hash automatique via pre-save
+      password,
       telephone,
       dateDeNaissance,
+      emailToken,
+      emailTokenExpires: Date.now() + 24 * 60 * 60 * 1000, // 24h
+      isVerified: false,
     });
 
-    const token = generateToken(user._id);
+    // Création compte bancaire
+    await Account.create({
+      user: user._id,
+      balance: 0,
+      currency: "XOF",
+    });
+
+    const confirmURL = `${process.env.FRONTEND_URLS.split(",")[0]}/confirm-email/${emailToken}`;
+
+    await sendEmail({
+      to: email,
+      subject: "Confirmation de votre compte",
+      html: `
+        <h3>Bienvenue ${prenom}</h3>
+        <p>Veuillez confirmer votre compte :</p>
+        <a href="${confirmURL}">${confirmURL}</a>
+        <p>Ce lien expire dans 24 heures.</p>
+      `,
+    });
 
     res.status(201).json({
-      message: "Inscription réussie",
-      token,
-      user: {
-        id: user._id,
-        prenom: user.prenom,
-        name: user.name,
-        email: user.email,
-      },
+      message: "Inscription réussie. Vérifiez votre email.",
+      userId: user._id,
     });
   } catch (err) {
     console.error("REGISTER ERROR:", err);
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({
+      message: "Erreur serveur",
+      error: err.message,
+    });
   }
 };
-
 // ------------------- LOGIN CLASSIQUE -------------------
 export const login = async (req, res) => {
   try {

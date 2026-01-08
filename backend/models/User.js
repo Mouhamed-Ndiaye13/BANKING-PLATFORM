@@ -3,19 +3,36 @@ import bcrypt from "bcryptjs";
 
 const UserSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    prenom: { type: String, required: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    prenom: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    dateDeNaissance: {
+      type: Date,
+      required: true,
+    },
 
     telephone: {
       type: String,
       unique: true,
-      sparse: true, // autorise null pour Google
+      sparse: true,
+      default: null,
     },
 
     email: {
       type: String,
+      required: true,
       unique: true,
-      sparse: true, // Google fournit l’email
+      lowercase: true,
+      trim: true,
     },
 
     password: {
@@ -30,9 +47,24 @@ const UserSchema = new mongoose.Schema(
 
     googleId: {
       type: String,
-      default: null,
       unique: true,
       sparse: true,
+      default: null,
+    },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    emailToken: {
+      type: String,
+      default: null,
+    },
+
+    emailTokenExpires: {
+      type: Date,
+      default: null,
     },
 
     blocked: {
@@ -64,36 +96,26 @@ UserSchema.methods.comparePassword = async function (enteredPassword) {
 // Google OAuth helper
 // ===================
 UserSchema.statics.findOrCreateGoogleUser = async function (profile) {
-  // Google fournit toujours un ID
   const googleId = profile.sub || profile.id;
+  if (!googleId) throw new Error("Google profile invalide");
 
-  if (!googleId) {
-    throw new Error("Google profile invalide");
-  }
-
-  // 1️⃣ Recherche par googleId
   let user = await this.findOne({ googleId });
   if (user) return user;
 
-  // 2️⃣ Récupérer infos Google
-  const email = profile.email || profile?.emails?.[0]?.value || null;
-  const prenom = profile.given_name || profile.name?.givenName || "Google";
-  const name =
-    profile.family_name ||
-    profile.name?.familyName ||
-    "Utilisateur";
+  const email = profile.email || null;
+  const prenom = profile.given_name || "Google";
+  const name = profile.family_name || "Utilisateur";
 
-  // 3️⃣ Recherche par email (si existe)
   if (email) {
     user = await this.findOne({ email });
     if (user) {
       user.googleId = googleId;
+      user.isVerified = true;
       await user.save();
       return user;
     }
   }
 
-  // 4️⃣ Création utilisateur Google
   return this.create({
     name,
     prenom,
@@ -102,9 +124,8 @@ UserSchema.statics.findOrCreateGoogleUser = async function (profile) {
     password: null,
     telephone: null,
     avatar: profile.picture || null,
-    isEmailConfirmed: true, // Google = déjà validé
+    isVerified: true,
   });
 };
-
 
 export default mongoose.model("User", UserSchema);

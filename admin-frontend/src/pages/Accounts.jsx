@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
-import { api } from "../services/api";
+import axios from "axios";
 import { getToken } from "../services/auth";
+
+const BASE_URL = "https://banking-backend-rtsx.onrender.com"; // ✅ déployé
 
 export default function Accounts() {
   const [accounts, setAccounts] = useState([]);
@@ -10,13 +12,18 @@ export default function Accounts() {
   const [selectedAccount, setSelectedAccount] = useState("");
   const [amount, setAmount] = useState(0);
 
-  // Fetch all accounts
+  const token = getToken();
+
+  // -------- Fetch accounts --------
   const fetchAccounts = async () => {
     try {
-      const data = await api("GET", "/admin/accounts", getToken());
-      setAccounts(data);
+      const res = await axios.get(`${BASE_URL}/admin/accounts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAccounts(res.data);
     } catch (err) {
-      console.error("Erreur comptes:", err.message || err);
+      console.error("Erreur comptes:", err.response?.data || err.message);
+      alert("Erreur lors de la récupération des comptes");
     }
   };
 
@@ -24,21 +31,28 @@ export default function Accounts() {
     fetchAccounts();
   }, []);
 
-  // Dépôt ou retrait
+  // -------- Dépôt / Retrait --------
   const handleTransaction = async (type) => {
-    if (!selectedAccount || amount <= 0) return alert("Sélectionnez un compte et un montant valide");
+    if (!selectedAccount || amount <= 0) {
+      return alert("Sélectionnez un compte et un montant valide");
+    }
+
     try {
-      const endpoint = `/admin/accounts/${selectedAccount}/${type}`;
-      await api("POST", endpoint, getToken(), { amount });
-      alert(`${type === "deposit" ? "Dépôt" : "Retrait"} effectué !`);
+      const endpoint = `${BASE_URL}/admin/accounts/${selectedAccount}/${type}`;
+      const res = await axios.post(endpoint, { amount }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      alert(`${type === "deposit" ? "Dépôt" : "Retrait"} effectué ! Solde: ${res.data.balance}`);
       setAmount(0);
       fetchAccounts();
     } catch (err) {
-      alert(err.message || "Erreur transaction");
+      console.error("Erreur transaction:", err.response?.data || err.message);
+      alert(err.response?.data?.message || err.message || "Erreur transaction");
     }
   };
 
-  // Filtrer les comptes
+  // -------- Filtrer comptes --------
   const filteredAccounts = accounts.filter(
     (acc) =>
       acc.userId?.email?.toLowerCase().includes(search.toLowerCase()) ||
@@ -48,7 +62,6 @@ export default function Accounts() {
   return (
     <div className="flex min-h-screen bg-[#f5f2ee]">
       <div className="flex-1">
-        <Header />
         <div className="p-6">
           <h1 className="text-3xl font-bold mb-6 text-[#432703]">Gestion des comptes</h1>
 

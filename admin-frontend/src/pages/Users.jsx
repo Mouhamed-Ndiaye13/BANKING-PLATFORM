@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { api } from "../services/api";
+import { getToken } from "../services/auth";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -12,11 +13,11 @@ export default function Users() {
   // ✅ Récupération des users
   const fetchUsers = async () => {
     try {
-      const res = await api("get", "/admin/users");
+      const res = await api("GET", "/admin/users", getToken());
       setUsers(res);
     } catch (err) {
-      console.error("Erreur fetch users :", err);
-      if (err.message === "Token invalide ou expiré") {
+      console.error("Erreur fetch users :", err.response?.data || err.message || err);
+      if (err.response?.data?.message === "Token invalide ou expiré") {
         alert("Session expirée. Veuillez vous reconnecter.");
         window.location.href = "/login";
       }
@@ -31,35 +32,45 @@ export default function Users() {
   const handleDelete = async (id) => {
     if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
     try {
-      await api("delete", `/admin/users/${id}`);
-      setUsers(users.filter(u => u._id !== id));
+      await api("DELETE", `/admin/users/${id}`, getToken());
+      setUsers(users.filter((u) => u._id !== id));
+      alert("Utilisateur supprimé avec succès !");
     } catch (err) {
-      alert(err.message || "Erreur lors de la suppression");
+      console.error("Erreur delete user:", err.response?.data || err.message || err);
+      alert(err.response?.data?.message || err.message || "Erreur lors de la suppression");
     }
   };
 
   // Bloquer / Débloquer un utilisateur
   const handleBlock = async (id) => {
     try {
-      const res = await api("patch", `/admin/users/${id}/block`);
-      setUsers(users.map(u => u._id === id ? { ...u, blocked: res.blocked } : u));
+      const res = await api("PATCH", `/admin/users/${id}/block`, getToken());
+      setUsers(users.map((u) => (u._id === id ? { ...u, blocked: res.blocked } : u)));
+      alert(res.message || "Opération effectuée");
     } catch (err) {
-      alert(err.message || "Erreur lors du blocage/déblocage");
+      console.error("Erreur block/unblock user:", err.response?.data || err.message || err);
+      alert(err.response?.data?.message || err.message || "Erreur lors du blocage/déblocage");
     }
   };
 
   // Filtrer les utilisateurs
-  const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+  const filteredUsers = users.filter(
+    (u) =>
+      u.name.toLowerCase().includes(search.toLowerCase()) ||
+      u.prenom.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredUsers.length / perPage);
-  const paginatedUsers = filteredUsers.slice((currentPage - 1) * perPage, currentPage * perPage);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * perPage,
+    currentPage * perPage
+  );
 
   return (
     <div className="flex min-h-screen bg-[#f5f2ee]">
       <div className="flex-1">
+        <Header />
         <div className="p-6">
           <h1 className="text-3xl font-bold mb-6 text-[#432703]">Gestion des utilisateurs</h1>
 
@@ -67,7 +78,7 @@ export default function Users() {
           <div className="mb-4 flex gap-2">
             <input
               type="text"
-              placeholder="Rechercher par nom ou email..."
+              placeholder="Rechercher par nom, prénom ou email..."
               className="border p-2 rounded flex-1"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -95,20 +106,26 @@ export default function Users() {
                     </td>
                   </tr>
                 )}
-                {paginatedUsers.map(u => (
+                {paginatedUsers.map((u) => (
                   <tr key={u._id} className="border-b hover:bg-[#f0e6da]">
                     <td className="p-3">{u.name} {u.prenom}</td>
                     <td className="p-3">{u.email}</td>
                     <td className="p-3">{u.telephone || "N/A"}</td>
                     <td className="p-3">
-                      {u.accounts?.find(a => a.type === "courant")?.accountNumber || "N/A"}
+                      {u.accounts?.find((a) => a.type === "courant")?.accountNumber || "N/A"}
                     </td>
                     <td className="p-3 font-semibold">
-                      {u.blocked ? <span className="text-red-600">Bloqué</span> : <span className="text-green-600">Actif</span>}
+                      {u.blocked ? (
+                        <span className="text-red-600">Bloqué</span>
+                      ) : (
+                        <span className="text-green-600">Actif</span>
+                      )}
                     </td>
                     <td className="p-3 flex gap-2">
                       <button
-                        className={`px-3 py-1 rounded text-white ${u.blocked ? "bg-green-700 hover:bg-green-800" : "bg-[#432703] hover:bg-[#a28870]"}`}
+                        className={`px-3 py-1 rounded text-white ${
+                          u.blocked ? "bg-green-700 hover:bg-green-800" : "bg-[#432703] hover:bg-[#a28870]"
+                        }`}
                         onClick={() => handleBlock(u._id)}
                       >
                         {u.blocked ? "Débloquer" : "Bloquer"}
@@ -131,7 +148,9 @@ export default function Users() {
             {Array.from({ length: totalPages }, (_, i) => (
               <button
                 key={i}
-                className={`px-3 py-1 rounded font-semibold ${i + 1 === currentPage ? "bg-[#a28870] text-white" : "bg-[#f0e6da]"}`}
+                className={`px-3 py-1 rounded font-semibold ${
+                  i + 1 === currentPage ? "bg-[#a28870] text-white" : "bg-[#f0e6da]"
+                }`}
                 onClick={() => setCurrentPage(i + 1)}
               >
                 {i + 1}
