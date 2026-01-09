@@ -109,7 +109,7 @@ app.use("/admin", adminRoutes);
 app.get("/", (req, res) => {
   res.json({
     status: "OK",
-    message: "Backend Banque Rewmi running 🚀",
+    message: "Backend Banque Rewmi running ",
   });
 });
 
