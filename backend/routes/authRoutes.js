@@ -15,6 +15,9 @@ const router = express.Router();
 // Inscription
 router.post("/register", register);
 
+// Vérifier email avant inscription
+router.get("/check-email", checkEmail);
+
 router.get("/confirm-email/:token", confirmEmail);
 // Login (peut déclencher 2FA)
 router.post("/login", login);

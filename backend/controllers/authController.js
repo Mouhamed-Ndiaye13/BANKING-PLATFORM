@@ -17,6 +17,7 @@ export const register = async (req, res) => {
       telephone,
       dateDeNaissance,
     } = req.body;
+    
 
     // 🔹 Vérification existant
     const existingUser = await User.findOne({ email });
@@ -73,6 +74,19 @@ export const register = async (req, res) => {
       message: "Erreur serveur",
       error: error.message,
     });
+  }
+};
+
+export const checkEmail = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ message: "Email requis" });
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    res.json({ exists: !!user }); // true si email existe, sinon false
+  } catch (err) {
+    console.error("CHECK EMAIL ERROR:", err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 // ------------------- LOGIN CLASSIQUE -------------------
