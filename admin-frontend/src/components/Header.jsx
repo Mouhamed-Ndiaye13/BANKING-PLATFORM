@@ -1,47 +1,24 @@
-import { Bell } from "lucide-react";
 import { logout } from "../services/auth";
 
 export default function Header({ onMenuClick }) {
   return (
-    <header className="bg-white shadow p-4 flex justify-between items-center">
-      <h2 className="font-semibold text-primary">Admin Panel</h2>
+    <header className="relative bg-[#0f1320] shadow-md p-4 flex justify-between items-center">
+      {/* Bulles décoratives
+      <div className="absolute -top-16 -right-16 w-60 h-60 bg-[#d6c7b4]  opacity-30"></div>
+      <div className="absolute -bottom-12 -left-12 w-44 h-44 bg-[#bfa98a]  opacity-30"></div> */}
 
+      {/* Titre gauche */}
+      <h2 className="font-bold text-[#f3e8d7] text-xl">Admin Panel</h2>
+
+      {/* Bouton Déconnexion */}
       <button
-        onClick={logout}
-        className="bg-primary text-white px-4 py-1 rounded hover:bg-secondary"
+        className="text-sm bg-[#d6c7b4] text-[#141829] px-4 py-2 rounded-lg hover:bg-[#bfa98a] transition"
+        onClick={() => {
+          logout(); // ta fonction logout
+        }}
       >
-        Logout
+        Déconnexion
       </button>
-
-      <h2 className="text-xl font-semibold text-gray-700 hidden lg:block">
-        Admin Dashboard
-      </h2>
-
-      <div className="flex items-center gap-5 ml-auto">
-        {/* Notifications */}
-        <button className="relative">
-          <Bell className="w-6 h-6 text-gray-600 hover:text-gray-800 transition" />
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
-            2
-          </span>
-        </button>
-
-        {/* Profile */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold">
-          JD
-        </div>
-
-        {/* Déconnexion */}
-        <button
-          className="text-sm bg-red-500 text-white px-4 py-1.5 rounded-lg hover:bg-red-600 transition hidden lg:block"
-          onClick={() => {
-            localStorage.removeItem("token");
-            window.location.reload();
-          }}
-        >
-          Déconnexion
-        </button>
-      </div>
     </header>
   );
 }

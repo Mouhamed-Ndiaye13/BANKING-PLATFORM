@@ -10,7 +10,6 @@ export default function Users() {
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 5;
 
-  // ✅ Récupération des users
   const fetchUsers = async () => {
     try {
       const res = await api("GET", "/admin/users", getToken());
@@ -28,7 +27,6 @@ export default function Users() {
     fetchUsers();
   }, []);
 
-  // Supprimer un utilisateur
   const handleDelete = async (id) => {
     if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
     try {
@@ -41,7 +39,6 @@ export default function Users() {
     }
   };
 
-  // Bloquer / Débloquer un utilisateur
   const handleBlock = async (id) => {
     try {
       const res = await api("PATCH", `/admin/users/${id}/block`, getToken());
@@ -53,7 +50,6 @@ export default function Users() {
     }
   };
 
-  // Filtrer les utilisateurs
   const filteredUsers = users.filter(
     (u) =>
       u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -68,46 +64,45 @@ export default function Users() {
   );
 
   return (
-    <div className="flex min-h-screen bg-[#f5f2ee]">
-      <div className="flex-1">
-        <Header />
-        <div className="p-6">
-          <h1 className="text-3xl font-bold mb-6 text-[#432703]">Gestion des utilisateurs</h1>
+    <div className="flex min-h-screen bg-[#0f1320] text-[#f3e8d7]">
+      <div className="flex-1 flex flex-col">
+        <div className="p-6 flex-1 overflow-auto">
+          <h1 className="text-3xl font-bold mb-6 text-[#bfa98a]">Gestion des utilisateurs</h1>
 
           {/* Barre de recherche */}
           <div className="mb-4 flex gap-2">
             <input
               type="text"
               placeholder="Rechercher par nom, prénom ou email..."
-              className="border p-2 rounded flex-1"
+              className="flex-1 p-3 rounded-lg bg-[#3b322a] text-[#f3e8d7] border border-[#bfa98a] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#bfa98a]"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
           {/* Tableau des utilisateurs */}
-          <div className="overflow-x-auto bg-white rounded shadow">
-            <table className="min-w-full text-left">
-              <thead className="bg-[#a28870] text-white">
+          <div className="overflow-x-auto bg-[#3b322a] rounded-xl shadow-lg">
+            <table className="min-w-full table-auto">
+              <thead className="bg-[#bfa98a]/80 text-[#141829]">
                 <tr>
-                  <th className="p-3">Nom</th>
-                  <th className="p-3">Email</th>
-                  <th className="p-3">Téléphone</th>
-                  <th className="p-3">Compte courant</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3">Actions</th>
+                  <th className="p-3 text-left">Nom</th>
+                  <th className="p-3 text-left">Email</th>
+                  <th className="p-3 text-left">Téléphone</th>
+                  <th className="p-3 text-left">Compte courant</th>
+                  <th className="p-3 text-left">Status</th>
+                  <th className="p-3 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedUsers.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-4 text-center text-gray-500">
+                    <td colSpan={6} className="p-4 text-center text-gray-400">
                       Aucun utilisateur trouvé
                     </td>
                   </tr>
                 )}
                 {paginatedUsers.map((u) => (
-                  <tr key={u._id} className="border-b hover:bg-[#f0e6da]">
+                  <tr key={u._id} className="border-b border-gray-700 hover:bg-[#5a4a3b] transition">
                     <td className="p-3">{u.name} {u.prenom}</td>
                     <td className="p-3">{u.email}</td>
                     <td className="p-3">{u.telephone || "N/A"}</td>
@@ -116,22 +111,22 @@ export default function Users() {
                     </td>
                     <td className="p-3 font-semibold">
                       {u.blocked ? (
-                        <span className="text-red-600">Bloqué</span>
+                        <span className="text-red-500">Bloqué</span>
                       ) : (
-                        <span className="text-green-600">Actif</span>
+                        <span className="text-green-500">Actif</span>
                       )}
                     </td>
-                    <td className="p-3 flex gap-2">
+                    <td className="p-3 flex gap-2 flex-wrap">
                       <button
-                        className={`px-3 py-1 rounded text-white ${
+                        className={`px-3 py-1 rounded font-medium text-white ${
                           u.blocked ? "bg-green-700 hover:bg-green-800" : "bg-[#432703] hover:bg-[#a28870]"
-                        }`}
+                        } transition`}
                         onClick={() => handleBlock(u._id)}
                       >
                         {u.blocked ? "Débloquer" : "Bloquer"}
                       </button>
                       <button
-                        className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+                        className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 transition"
                         onClick={() => handleDelete(u._id)}
                       >
                         Supprimer
@@ -144,12 +139,14 @@ export default function Users() {
           </div>
 
           {/* Pagination */}
-          <div className="mt-6 flex justify-center gap-2">
+          <div className="mt-6 flex justify-center flex-wrap gap-2">
             {Array.from({ length: totalPages }, (_, i) => (
               <button
                 key={i}
-                className={`px-3 py-1 rounded font-semibold ${
-                  i + 1 === currentPage ? "bg-[#a28870] text-white" : "bg-[#f0e6da]"
+                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                  i + 1 === currentPage
+                    ? "bg-[#bfa98a] text-[#141829]"
+                    : "bg-[#3b322a] text-[#f3e8d7] hover:bg-[#5a4a3b]"
                 }`}
                 onClick={() => setCurrentPage(i + 1)}
               >
